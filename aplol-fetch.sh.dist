@@ -8,7 +8,7 @@
 reports_path="/localdisk/ftp/reports/Inventory"
 
 # Where do we want to copy reports locally?
-archive_path="/some/path/pi-aplol/files/reports"
+archive_path="/some/path/aplol/files/reports"
 
 # Calculate number of files that we want to fetch
 # Done by calculating unique Virtual Domains present in the files
