@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		
+		<title>AP Groups</title>
+		<style type="text/css" title="currentStyle">
+			@import "/css/table_page.css";
+			@import "/css/table.css";
+		</style>
+		<script type="text/javascript" language="javascript" src="/js/jquery.js"></script>
+		<script type="text/javascript" language="javascript" src="/js/jquery.dataTables.js"></script>
+		<script type="text/javascript" charset="utf-8">
+			$(document).ready(function() {
+				$('#dynamic').html( '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
+
+				$('#example').dataTable( {
+					"paginate": false,
+					"lengthChange": false,
+					"search": {
+						"regex": true,
+						"caseInsensitive": true
+					},
+					"ajaxSource": '/aplol.pl?p=apgroup',
+					"order": [
+						[3,"asc"],
+						[8,"asc"]
+					],
+					"columns": [
+						{ "title": "AP name" },
+						{ "title": "AP model" },
+						{ "title": "Controller" },
+						{ "title": "Neighbor name" },
+						{ "title": "Neighbor IP" },
+						{ "title": "Neighbor port" },
+						{ "title": "Location" },
+						{ "title": "AP Group" },
+						{
+							"title": "Port number",
+							"visible": false,
+							"searchable": false,
+						},
+						{
+							"title": "MAC",
+							"visible": true,
+							"searchable": false,
+							"class": "hideme",
+						},
+						{
+							"title": '<input type="checkbox" id="checkall" title="Select all" onClick="toggle(this)"/>',
+							"defaultContent": '<input type="checkbox" class="checkbox-tr">',
+							"sortable": false,
+							"searchable": false,
+						}
+					]
+				} );
+
+				$('#checkall').click( function() {
+					$('input').prop('checked', this.checked);
+				} );
+ 
+				$('#submit').click( function() {
+					var aps = [];
+					$('#example tr').each(function(row, tr){
+						if ( $(tr).find('.checkbox-tr').is(':checked') ) {
+							// only interested in checked AP's
+							apgroup = $(tr).find('td:eq(7)').text();
+
+							if(apgroup != "undef"){
+								// we only want associated AP's
+								ethmac = $(tr).find('td:eq(8)').text();
+
+								if(ethmac){
+									// don't add column headers
+									aps.push(ethmac);
+								}
+							}
+						}
+					});
+
+					window.location.href = "/apgroup.pl?action=select&ethmac=" + aps;
+
+					return false;
+				} );
+			} );
+		</script>
+	</head>
+
+	<body id="dt_example">
+		<div id="container">
+			<div id="dynamic"></div>
+			<div class="spacer"></div>
+			<button class="right" id="submit" type="submit">Change AP group for selected AP's</button>
+		</div>
+
+	</body>
+</html>

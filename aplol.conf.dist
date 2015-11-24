@@ -1,0 +1,63 @@
+<switch>
+	silent_logging = 0
+	debug_log = 0
+</switch>
+
+<path>
+	working_folder = /some/path/pi-aplol
+	reports = $working_folder/files/reports
+	new_reports = $reports/new
+	old_reports = $reports/old
+	log_folder = $working_folder/files/logs
+</path>
+
+<div>
+	apgroups = group1
+	apgroups = group2
+	apgroups = group3
+	apgroups = default-group
+</div>
+
+<regex>
+	file = AP-count_[a-zA-Z0-9\_\-]+\_[0-9]{8}.+\.csv
+	vd = AP-count_([a-zA-Z0-9\_\-]+)\_[0-9]{8}.+\.csv
+	valid_mac = ([0-9a-fA-F]{2}[:-]){5}([0-9a-fA-F]{2})
+</regex>
+
+<db>
+	hostname = localhost
+	port = 5432
+	database = aplol
+	username = aplol
+	password = supersecret
+</db>
+
+<adlds>
+	# Implementation sometims have issues with DNS
+	# Use IP instead (never debugged it, not really important for me)
+	hostname = 10.10.10.10
+	port = 1234
+	username = CN=Someuser,CN=SomeCN,DC=foobar,DC=com
+	password = superduperultrasecret
+	path = CN=Somepath,CN=SomeCN,DC=foobar,DC=com
+	group_dn = CN=Somepath,CN=Somegroup,CN=SomeCN,DC=foobar,DC=com
+	create_message = "Added by supersecret script!"
+</adlds>
+
+<ciscopi>
+	baseurl = https://optimus-prime.foobar.com/webacs/api/v1
+	username = apiuser
+	password = topsecret
+</ciscopi>
+
+<snmp>
+	version = 2c
+	read = public
+	write = private
+	timeout = 1
+	retries = 10
+</snmp>
+
+<binaries>
+
+</binaries>
