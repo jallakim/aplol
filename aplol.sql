@@ -215,8 +215,9 @@ ALTER SEQUENCE vd_mapping_id_seq OWNED BY vd_mapping.id;
 CREATE TABLE virtual_domains (
     id integer NOT NULL,
     name character varying NOT NULL,
-    "desc" character varying NOT NULL,
-    desc_long character varying
+    description character varying NOT NULL,
+    description_long character varying,
+    active boolean DEFAULT true NOT NULL
 );
 
 
