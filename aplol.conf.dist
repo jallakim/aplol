@@ -1,6 +1,7 @@
 <switch>
 	silent_logging = 0
 	debug_log = 0
+	delete_vd = 0
 </switch>
 
 <path>

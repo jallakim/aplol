@@ -349,18 +349,21 @@ if($page =~ m/^unassigned$/){
 	my @json_array;
 
 	foreach my $vd_name (sort keys %$vds){
-		my $vd_count = $aplol->get_graph_vd($vds->{$vd_name}{id});
-		my (@vd_array, %vd_hash);
+		if($vds->{$vd_name}{active}){
+			# only if VD is active
+			my $vd_count = $aplol->get_graph_vd($vds->{$vd_name}{id});
+			my (@vd_array, %vd_hash);
 
-		foreach my $count_id (sort { $vd_count->{$a}{date} cmp $vd_count->{$b}{date} } keys %$vd_count){
-			my $epoch_date = date_to_epoch($vd_count->{$count_id}{date});
+			foreach my $count_id (sort { $vd_count->{$a}{date} cmp $vd_count->{$b}{date} } keys %$vd_count){
+				my $epoch_date = date_to_epoch($vd_count->{$count_id}{date});
 
-	                push(@vd_array, [int($epoch_date), int($vd_count->{$count_id}{count})]);
-	        }
+		                push(@vd_array, [int($epoch_date), int($vd_count->{$count_id}{count})]);
+		        }
 
-		$vd_hash{name} = "$vds->{$vd_name}{desc}";
-		$vd_hash{data} = \@vd_array;
-		push(@json_array, \%vd_hash);
+			$vd_hash{name} = "$vds->{$vd_name}{description}";
+			$vd_hash{data} = \@vd_array;
+			push(@json_array, \%vd_hash);
+		}
 	}
 
 	my $json = encode_json \@json_array;

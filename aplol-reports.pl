@@ -220,9 +220,11 @@ sub update_vds{
 
 	# then delete everything from DB that 
 	# only has an entry in the DB
-	foreach my $vd (keys %$db_vds){
-		# delete from DB
-		$aplol->delete_vd($vd);
+	if ($config{switch}->{delete_vd}){
+		foreach my $vd (keys %$db_vds){
+			# delete from DB
+			$aplol->delete_vd($vd);
+		}
 	}
 
 	# then add everything to DB that has

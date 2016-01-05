@@ -39,8 +39,8 @@ my $sql_statements = {
 					WHERE 	(name = ?)
 				",	
 	add_vd =>		"	INSERT	INTO virtual_domains
-						(name, desc)
-
+						(name, description)
+						
 					VALUES	(?, ?)
 				",	
 	get_locations =>	"	SELECT 	*
@@ -64,8 +64,8 @@ my $sql_statements = {
 						vd_map.vd_id AS vd_id,
 						vd_map.location_id AS location_id,
 						vd.name AS name,
-						vd.desc AS desc,
-						vd.desc_long AS desc_long,
+						vd.description AS desc,
+						vd.description_long AS desc_long,
 						l.location AS location			
 
 					FROM	vd_mapping vd_map
@@ -291,6 +291,8 @@ my $sql_statements = {
 	
 					SET	alarm = 'undef',
 						updated = 'now()'
+					
+					WHERE	active = true
 				",
 	update_apgroup_info =>	"	UPDATE	aps
 	
@@ -453,10 +455,10 @@ sub delete_vd{
 # Add VD
 sub add_vd{
 	my $self = shift;
-	my ($vd, $desc) = "@_";
+	my ($vd, $description) = @_;
 	
 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{add_vd});
-	$self->{_sth}->execute($vd, $desc);
+	$self->{_sth}->execute($vd, $description);
 	$self->{_sth}->finish();
 }
 
