@@ -1,28 +1,14 @@
 ############  aplol START ############
-# Update AP-count reports (fetched from PI)
-# Assumes that PI makes a new report xx:45 every hour
-49 * * * * /bin/bash /some/path/aplol/aplol-fetch.sh
-
-# UUpdate DB with info from fetched reports
-54 * * * * perl /some/path/aplol/aplol-reports.pl
+# Update DB with stuff from PI API
+*/5 * * * * perl /some/path/aplol/aplol-ciscopi-aps.pl
 
 # Update DB with count
 01 * * * * perl /some/path/aplol/aplol-count.pl
-
-# Update DB with stuff from PI API
-07 * * * * perl /some/path/aplol/aplol-ciscopi.pl
 
 # Update AP-groups for all AP's
 10 * * * * perl /some/path/aplol/aplol-apgroups.pl
 
 # Update AD-LDS with stuff from DB (our DB is authorative)
 29 * * * * perl /some/path/aplol/aplol-adlds.pl
-
-# Moves reports from 'new'-folder to 'old'-folder
-# Runs after everything, but before aplol-fetch.sh
-45 * * * * perl /some/path/aplol/aplol-move.pl
-
-# Removes old reports (older than 1 day)
-39 04 * * * cd /; find /some/path/aplol/files/reports/old/ -type f -name "*.csv" -mtime +1 -exec rm -v '{}' \;
 ############ aplol STOP ############
 

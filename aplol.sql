@@ -69,11 +69,15 @@ CREATE TABLE aps (
     created timestamp with time zone DEFAULT ('now'::text)::timestamp with time zone NOT NULL,
     updated timestamp with time zone DEFAULT ('now'::text)::timestamp with time zone NOT NULL,
     active boolean DEFAULT true NOT NULL,
-    uptime integer DEFAULT 0 NOT NULL,
+    uptime bigint DEFAULT 0 NOT NULL,
     alarm character varying DEFAULT 'undef'::character varying NOT NULL,
     wmac macaddr DEFAULT '00:00:00:00:00:00'::macaddr NOT NULL,
     apgroup_oid character varying DEFAULT 'undef'::character varying NOT NULL,
-    apgroup_name character varying DEFAULT 'undef'::character varying NOT NULL
+    apgroup_name character varying DEFAULT 'undef'::character varying NOT NULL,
+    serial character varying DEFAULT 'undef'::character varying NOT NULL,
+    client_total integer DEFAULT 0 NOT NULL,
+    client_24 integer DEFAULT 0 NOT NULL,
+    client_5 integer DEFAULT 0 NOT NULL
 );
 
 
@@ -84,6 +88,27 @@ ALTER TABLE public.aps OWNER TO aplol;
 --
 
 COMMENT ON COLUMN aps.active IS 'Set to false if AP not found';
+
+
+--
+-- Name: COLUMN aps.client_total; Type: COMMENT; Schema: public; Owner: aplol
+--
+
+COMMENT ON COLUMN aps.client_total IS 'Total number of clients connected to AP';
+
+
+--
+-- Name: COLUMN aps.client_24; Type: COMMENT; Schema: public; Owner: aplol
+--
+
+COMMENT ON COLUMN aps.client_24 IS 'Total number of 2.4GHz clients connected to AP';
+
+
+--
+-- Name: COLUMN aps.client_5; Type: COMMENT; Schema: public; Owner: aplol
+--
+
+COMMENT ON COLUMN aps.client_5 IS 'Total number of 5GHz clients connected to AP';
 
 
 --
@@ -227,14 +252,7 @@ ALTER TABLE public.virtual_domains OWNER TO aplol;
 -- Name: COLUMN virtual_domains.name; Type: COMMENT; Schema: public; Owner: aplol
 --
 
-COMMENT ON COLUMN virtual_domains.name IS 'Virtual Domain name';
-
-
---
--- Name: COLUMN virtual_domains."desc"; Type: COMMENT; Schema: public; Owner: aplol
---
-
-COMMENT ON COLUMN virtual_domains."desc" IS 'Beskrivelse';
+COMMENT ON COLUMN virtual_domains.name IS 'VD name as defined in PI';
 
 
 --
