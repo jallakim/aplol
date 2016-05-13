@@ -118,23 +118,29 @@ my $sql_statements = {
 					WHERE 	(ethmac = ?)
 				",	
 	add_ap =>		"	INSERT	INTO aps
-						(name, ethmac, wmac, ip, model, location_id, wlc_id, associated,
-						neighbor_name, neighbor_addr, neighbor_port)
+						(name, ethmac, wmac, serial, ip, model, location_id, 
+						wlc_id, associated, uptime, neighbor_name, neighbor_addr,
+						neighbor_port, client_total, client_24, client_5)
 
-					VALUES	(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+					VALUES	(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				",
 	update_ap =>		"	UPDATE	aps
 	
 					SET	name = (?),
 						wmac = (?),
+						serial = (?),
 						ip = (?),
 						model = (?),
 						location_id = (?),
 						wlc_id = (?),
 						associated = (?),
+						uptime = (?),
 						neighbor_name = (?),
 						neighbor_addr = (?),
 						neighbor_port = (?),
+						client_total = (?),
+						client_24 = (?),
+						client_5 = (?),
 						updated = 'now()',
 						active = 'true'
 						
@@ -212,6 +218,7 @@ my $sql_statements = {
 					WHERE	(aps.associated = false)
 						AND (aps.active = true)
 						AND (aps.model NOT LIKE '%OEAP%')
+						AND (l.location NOT LIKE '%HBE > Utlan%')
 	",
 	get_rootdomain_aps =>	"	SELECT	aps.ethmac,
 						aps.name,
@@ -618,19 +625,24 @@ sub deactivate_ap{
 sub add_ap{
 	my $self = shift;
 	my $apinfo = shift;
-		
+	
 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{add_ap});
 	$self->{_sth}->execute(	$apinfo->{name},
 				$apinfo->{ethmac},
 				$apinfo->{wmac},
+				$apinfo->{serial},
 				$apinfo->{ip},
 				$apinfo->{model},
 				$apinfo->{location_id},
 				$apinfo->{wlc_id},
 				$apinfo->{associated},
+				$apinfo->{uptime},
 				$apinfo->{neighbor_name},
 				$apinfo->{neighbor_addr},
-				$apinfo->{neighbor_port}
+				$apinfo->{neighbor_port},
+				$apinfo->{client_total},
+				$apinfo->{client_24},
+				$apinfo->{client_5}
 				);
 	$self->{_sth}->finish();
 }
@@ -643,14 +655,19 @@ sub update_ap{
 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{update_ap});
 	$self->{_sth}->execute(	$apinfo->{name},
 				$apinfo->{wmac},
+				$apinfo->{serial},
 				$apinfo->{ip},
 				$apinfo->{model},
 				$apinfo->{location_id},
 				$apinfo->{wlc_id},
 				$apinfo->{associated},
+				$apinfo->{uptime},
 				$apinfo->{neighbor_name},
 				$apinfo->{neighbor_addr},
 				$apinfo->{neighbor_port},
+				$apinfo->{client_total},
+				$apinfo->{client_24},
+				$apinfo->{client_5},
 				$apinfo->{ethmac}
 				);
 	$self->{_sth}->finish();
@@ -928,4 +945,16 @@ sub get_apinfo{
 	$self->{_sth}->finish();
 	
 	return $apinfo;
+}
+
+# check if array contains entry
+sub array_contains{
+	my $self = shift;
+	my ($array, $value) = @_;
+	
+	foreach my $element (@$array){
+		return 1 if($element =~ m/$value/);
+	}
+	
+	return 0;
 }
