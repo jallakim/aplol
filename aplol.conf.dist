@@ -6,9 +6,6 @@
 
 <path>
 	working_folder = /some/path/aplol
-	reports = $working_folder/files/reports
-	new_reports = $reports/new
-	old_reports = $reports/old
 	log_folder = $working_folder/files/logs
 </path>
 

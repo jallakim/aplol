@@ -16,17 +16,17 @@ my %config = $aplol->get_config();
 
 # Log
 sub log_it{
-	$aplol->log_it("reports", "@_");
+	$aplol->log_it("count", "@_");
 }
 
 # Logs debug-stuff if debug has been turned on
 sub debug_log{
-	$aplol->debug_log("reports", "@_");
+	$aplol->debug_log("count", "@_");
 }
 
 # Logs error-stuff
 sub error_log{
-	$aplol->error_log("reports", "@_");
+	$aplol->error_log("count", "@_");
 }
 
 # Update VD-count
