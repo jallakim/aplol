@@ -42,7 +42,7 @@ sub get_url{
         my $full_url = $config{ciscopi}->{baseurl} . "/" . $url;
 
 	$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0; # just to be sure :-D
-	my $ua = LWP::UserAgent->new;
+	my $ua = LWP::UserAgent->new(proxy => '');
 	my $req = HTTP::Request->new(GET => $full_url);
 	$req->authorization_basic($config{ciscopi}->{username}, $config{ciscopi}->{password});
 
