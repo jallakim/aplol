@@ -73,7 +73,7 @@ sub get_json{
 			} catch {
 				use Data::Dumper;
 				print Dumper($url_content);
-				die(error_log("Malformed output from \$url_content; '$url'"));
+				die(error_log("Malformed output from \$url_content; '$newurl'"));
 			};
 			
 			my $first = $json_text->{queryResponse}->{'@first'};
@@ -322,7 +322,13 @@ sub update_aps{
 		
 	# deactivate if only present in DB
 	foreach my $ethmac (keys %$db_aps){
-		$aplol->deactivate_ap($ethmac);
+		if($db_aps->{$ethmac}{active}){
+			# but only if not already deactivated
+			# we do this to avoid updating the 'updated' column
+			# hence the 'updated' column is "frozen" to
+			# whenever the AP was first deactivated
+			$aplol->deactivate_ap($ethmac);
+		}
 	}
 	
 	# add to DB if not present
