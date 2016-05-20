@@ -51,7 +51,7 @@ my $wlcs = $aplol->get_wlcs();
 
 # iterate through all WLC's
 foreach my $wlc_name (sort keys %$wlcs){
-	if($wlc_name =~ m/(b$|dmz)/i){ # skip dmz + ending with 'b' (HA-modules)
+	if($wlc_name =~ m/dmz/i){ # skip dmz
 		log_it("Skipping WLC '$wlc_name' ($wlcs->{$wlc_name}{ipv4}).");
 		next;
 	} else {

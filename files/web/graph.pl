@@ -25,7 +25,7 @@ sub header{
 
 # print the page
 sub print_page{
-	my ($title, $yaxis, $json_url) = @_;
+	my ($title, $yaxis, $json_url, $range) = @_;
 
 	print header();
 	print <<LOLZ;
@@ -39,9 +39,27 @@ sub print_page{
 
 		<script>
 			\$(function() {
-				var seriesOptions = [],
-				yAxisOptions = [],
-				colors = Highcharts.getOptions().colors;
+				//var seriesOptions = [],
+				//yAxisOptions = [],
+				//colors = Highcharts.getOptions().colors;
+				
+				Highcharts.setOptions({
+					global: {
+						useUTC: false
+					}
+				});
+				
+				function afterSetExtremes(e) {
+					var chart = \$('#container').highcharts();
+
+					chart.showLoading('Loading data from server...');
+					\$.getJSON('$json_url&start=' + Math.round(e.min) + '&end=' + Math.round(e.max) + '&callback=?', function (json) {
+						json.forEach(function(entry, index) {
+							chart.series[index].setData(json[index].data);
+ 						});
+						chart.hideLoading();
+					});
+				}
 
 				\$.getJSON('$json_url', function(json){
 					\$('#container').highcharts('StockChart', {
@@ -57,14 +75,28 @@ sub print_page{
 					    	},
 
 					    	navigator: {
+							adaptToUpdatedData: false,
 					                series: {
 				                    		type: 'line'
 			        	        	}
 				            	},
+						
+						scrollbar: {
+							liveRedraw: false
+						},
+						
+						rangeSelector: {
+							inputEnabled: false, // it supports only days
+							selected : $range
+						},
 
 					    	xAxis: {
 			              			ordinal: false,
-			              			mode: 'time',
+			              			//mode: 'time',
+							events : {
+								afterSetExtremes : afterSetExtremes
+							},
+							minRange: 24 * 60 * 60 * 1000 // one day
 			            	    	},
 
 					    	yAxis: {
@@ -122,11 +154,11 @@ my $graph = $cgi->param('g');
 
 if($graph){
 	if($graph =~ m/^total$/){
-		print_page("Total number of APs", "Number of APs", "/aplol.pl?p=graph-total");
+		print_page("Total number of APs", "Number of APs", "/aplol.pl?p=graph-total", 5);
 	} elsif($graph =~ m/^vd$/){
-		print_page("Total number of APs", "Number of APs", "/aplol.pl?p=graph-vd");
+		print_page("Total number of APs", "Number of APs", "/aplol.pl?p=graph-vd", 4);
 	} elsif($graph =~ m/^wlc$/){
-		print_page("Total number of APs", "Number of APs", "/aplol.pl?p=graph-wlc");
+		print_page("Total number of APs", "Number of APs", "/aplol.pl?p=graph-wlc", 4);
 	} else {
 		# not a valid graph
 		print CGI::header(

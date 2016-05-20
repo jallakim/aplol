@@ -373,27 +373,46 @@ if($page =~ m/^unassigned$/){
 } elsif($page =~ m/^graph-wlc$/){
 	## Number of AP's per WLC
 	my $wlcs = $aplol->get_wlcs();
-	my @json_array;
+	my $callback = $cgi->param('callback');
+	my $start = $cgi->param('start');
+	my $end = $cgi->param('end');
+	my (%db_hash, @json_array);
+	
+	
+	if($start && $end){
+		$start = int($start / 1000);
+		$end = int($end / 1000);
+	} else {
+		# all data
+		$end = time();
+		$start = $end - (365 * 24 * 60 * 60 * 100); # 100 years ago
+	}
+	
+	# get all WLCs
+	my $wlc_count = $aplol->get_graph_wlc_all($start, $end);
 
-	foreach my $wlc_name (sort keys %$wlcs){
-		my $wlc_count = $aplol->get_graph_wlc($wlcs->{$wlc_name}{id});
-		my (@wlc_array, %wlc_hash);
-
-		foreach my $count_id (sort { $wlc_count->{$a}{date} cmp $wlc_count->{$b}{date} } keys %$wlc_count){
-			my $epoch_date = date_to_epoch($wlc_count->{$count_id}{date});
-
-	                push(@wlc_array, [int($epoch_date), int($wlc_count->{$count_id}{count})]);
-	        }
-
-		$wlc_hash{name} = "$wlc_name";
-		$wlc_hash{data} = \@wlc_array;
+	# organize data
+	foreach my $entry (@$wlc_count){
+		push(@{$db_hash{$entry->{name}}}, [int($entry->{date}*1000), int($entry->{count})]);
+	}
+	
+	# put into correct structure
+	foreach my $wlc (keys %db_hash){
+		my %wlc_hash;
+		$wlc_hash{name} = "$wlc";
+		$wlc_hash{data} = \@{$db_hash{$wlc}};
 		push(@json_array, \%wlc_hash);
 	}
-
+	
+	# make json
 	my $json = encode_json \@json_array;
+	
+	if($callback){
+		$json = $callback . "(" . $json  . ");";
+	}
+	
 	print header();
 	print $json;
-
 } else {
 	## Not a valid table
 	print CGI::header(

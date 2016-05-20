@@ -280,6 +280,37 @@ my $sql_statements = {
 
 					WHERE 	(wlc_id = ?)
 				",
+	get_graph_wlc_all =>	"	SELECT 	wlc.name, extract(epoch from wlc_count.date) AS date, wlc_count.count
+
+					FROM 	wlc_count
+						INNER JOIN wlc ON wlc.id = wlc_count.wlc_id
+						
+					WHERE	wlc_count.date >= to_timestamp(?)
+						AND wlc_count.date <= to_timestamp(?)
+				",
+	get_graph_wlc_week =>	"	(SELECT DISTINCT ON (date_week, wlc_count.wlc_id)
+						wlc.name, extract(epoch from wlc_count.date) AS date, wlc_count.count,
+						date_trunc('week', wlc_count.date) AS date_week
+
+					FROM 	wlc_count
+						INNER JOIN wlc ON wlc.id = wlc_count.wlc_id
+
+					WHERE	wlc_count.date >= to_timestamp(?)
+						AND wlc_count.date <= to_timestamp(?)
+						
+					ORDER BY date_week, wlc_count.wlc_id, date)
+					
+					UNION ALL
+					
+					(SELECT DISTINCT ON (wlc.name)
+				       		wlc.name, extract(epoch from wlc_count.date) AS date, wlc_count.count,
+						date_trunc('week', wlc_count.date) AS date_week
+				
+					FROM 	wlc_count
+						INNER JOIN wlc ON wlc.id = wlc_count.wlc_id
+
+					ORDER  BY wlc.name, date DESC)
+				",		
 	update_uptime =>	"	UPDATE	aps
 	
 					SET	uptime = (?),
@@ -878,6 +909,26 @@ sub get_graph_wlc{
 	$self->{_sth}->execute($wlc_id);
 	
 	my $count = $self->{_sth}->fetchall_hashref("id");
+	$self->{_sth}->finish();
+	
+	return $count;
+}
+
+# Get all WLC counts for all WLCs
+sub get_graph_wlc_all{
+	my $self = shift;
+	my ($start, $end) = @_;
+	
+	if(($end - $start) > (3 * 31 * 24 * 60 * 60)){
+		# if more than 3 months, load weekly data
+		$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_wlc_week});
+	} else {
+		$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_wlc_all});
+	}
+	
+	$self->{_sth}->execute($start, $end);
+	
+	my $count = $self->{_sth}->fetchall_arrayref({});
 	$self->{_sth}->finish();
 	
 	return $count;
