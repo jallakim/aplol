@@ -51,8 +51,12 @@ sub get_url{
 	my $ua = LWP::UserAgent->new(proxy => '');
 	my $req = HTTP::Request->new(GET => $full_url);
 	$req->authorization_basic($config{ciscopi}->{username}, $config{ciscopi}->{password});
-
-	return $ua->request($req)->content();
+	
+	my $res = $ua->request($req);
+	my $content = $res->content();
+	my $header_info = "Status code: " . $res->status_line() . ". Content type: " . $res->content_type();
+	
+	return ($content, $header_info);
 }
 
 # get JSON from PI
@@ -64,7 +68,7 @@ sub get_json{
 
 	while(1){
 		# iterate through all pagings until done
-		my $url_content = get_url($newurl);
+		my ($url_content, $header_info) = get_url($newurl);
 	
 		if($url_content){
 			my $json_text;
@@ -73,6 +77,7 @@ sub get_json{
 			} catch {
 				use Data::Dumper;
 				print Dumper($url_content);
+				error_log($header_info);
 				die(error_log("Malformed output from \$url_content; '$newurl'"));
 			};
 			
