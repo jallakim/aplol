@@ -326,58 +326,92 @@ if($page =~ m/^unassigned$/){
 	}
 } elsif($page =~ m/^graph-total$/){
 	## Total number of AP's
-	my $total_count = $aplol->get_graph_total();
-	my (@json_array, @total_array, %total_hash);
-
-	foreach my $total_id (sort { $total_count->{$a}{date} cmp $total_count->{$b}{date} } keys %$total_count){
-		my $epoch_date = date_to_epoch($total_count->{$total_id}{date});
-
-                push(@total_array, [int($epoch_date), int($total_count->{$total_id}{count})]);
-        }
-
-	$total_hash{name} = "Total";
-	$total_hash{data} = \@total_array;
-	push(@json_array, \%total_hash);
-	my $json = encode_json \@json_array;
+	my $callback = $cgi->param('callback');
+	my $start = $cgi->param('start');
+	my $end = $cgi->param('end');
+	my (@db_array, @json_array);
 		
+	if($start && $end){
+		$start = int($start / 1000);
+		$end = int($end / 1000);
+	} else {
+		# all data
+		$end = time();
+		$start = $end - (365 * 24 * 60 * 60 * 100); # 100 years ago
+	}
+	
+	# get all counts
+	my $total_count = $aplol->get_graph_total($start, $end);
+
+	# organize data
+	foreach my $id (sort { $total_count->{$a}{date} cmp $total_count->{$b}{date} } keys %$total_count){
+		push(@db_array, [int($total_count->{$id}{date}*1000), int($total_count->{$id}{count})]);
+	}
+	
+	# put into correct structure
+	my %total_hash;
+	$total_hash{name} = "Total";
+	$total_hash{data} = \@db_array;
+	push(@json_array, \%total_hash);
+	
+	# make json
+	my $json = encode_json \@json_array;
+	
+	if($callback){
+		$json = $callback . "(" . $json  . ");";
+	}
+	
 	print header();
 	print $json;
 
 } elsif($page =~ m/^graph-vd$/){
-	## Number of AP's per VD
-	my $vds = $aplol->get_vds();
-	my @json_array;
-
-	foreach my $vd_name (sort keys %$vds){
-		if($vds->{$vd_name}{active}){
-			# only if VD is active
-			my $vd_count = $aplol->get_graph_vd($vds->{$vd_name}{id});
-			my (@vd_array, %vd_hash);
-
-			foreach my $count_id (sort { $vd_count->{$a}{date} cmp $vd_count->{$b}{date} } keys %$vd_count){
-				my $epoch_date = date_to_epoch($vd_count->{$count_id}{date});
-
-		                push(@vd_array, [int($epoch_date), int($vd_count->{$count_id}{count})]);
-		        }
-
-			$vd_hash{name} = "$vds->{$vd_name}{description}";
-			$vd_hash{data} = \@vd_array;
-			push(@json_array, \%vd_hash);
-		}
+	## Number of AP's per Virtual Domain
+	my $callback = $cgi->param('callback');
+	my $start = $cgi->param('start');
+	my $end = $cgi->param('end');
+	my (%db_hash, @json_array);
+		
+	if($start && $end){
+		$start = int($start / 1000);
+		$end = int($end / 1000);
+	} else {
+		# all data
+		$end = time();
+		$start = $end - (365 * 24 * 60 * 60 * 100); # 100 years ago
 	}
+	
+	# get all VDs
+	my $vd_count = $aplol->get_graph_vd_all($start, $end);
 
+	# organize data
+	foreach my $entry (@$vd_count){
+		push(@{$db_hash{$entry->{description}}}, [int($entry->{date}*1000), int($entry->{count})]);
+	}
+	
+	# put into correct structure
+	foreach my $vd (keys %db_hash){
+		my %vd_hash;
+		$vd_hash{name} = "$vd";
+		$vd_hash{data} = \@{$db_hash{$vd}};
+		push(@json_array, \%vd_hash);
+	}
+	
+	# make json
 	my $json = encode_json \@json_array;
+	
+	if($callback){
+		$json = $callback . "(" . $json  . ");";
+	}
+	
 	print header();
 	print $json;
 
 } elsif($page =~ m/^graph-wlc$/){
 	## Number of AP's per WLC
-	my $wlcs = $aplol->get_wlcs();
 	my $callback = $cgi->param('callback');
 	my $start = $cgi->param('start');
 	my $end = $cgi->param('end');
 	my (%db_hash, @json_array);
-	
 	
 	if($start && $end){
 		$start = int($start / 1000);

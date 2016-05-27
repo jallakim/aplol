@@ -264,22 +264,12 @@ my $sql_statements = {
 
 					WHERE 	(aps.active = true)
 				",
-	get_graph_total =>	"	SELECT 	* 
-
-					FROM 	total_count
-				",
-	get_graph_vd =>		"	SELECT 	*
-
-					FROM 	vd_count
-
-					WHERE 	(vd_id = ?)
-				",
 	get_graph_wlc =>	"	SELECT 	*
 
 					FROM 	wlc_count
 
 					WHERE 	(wlc_id = ?)
-				",
+				",				
 	get_graph_wlc_all =>	"	SELECT 	wlc.name, extract(epoch from wlc_count.date) AS date, wlc_count.count
 
 					FROM 	wlc_count
@@ -310,7 +300,51 @@ my $sql_statements = {
 						INNER JOIN wlc ON wlc.id = wlc_count.wlc_id
 
 					ORDER  BY wlc.name, date DESC)
-				",		
+				",
+	get_graph_vd =>		"	SELECT 	*
+
+					FROM 	vd_count
+
+					WHERE 	(vd_id = ?)
+				",
+	get_graph_vd_all =>	"	SELECT 	vd.description, extract(epoch from vd_count.date) AS date, vd_count.count
+
+					FROM 	vd_count
+						INNER JOIN virtual_domains AS vd ON vd.id = vd_count.vd_id
+
+					WHERE	vd_count.date >= to_timestamp(?)
+						AND vd_count.date <= to_timestamp(?)
+				",
+	get_graph_vd_week =>	"	(SELECT DISTINCT ON (date_week, vd_count.vd_id)
+						vd.description, extract(epoch from vd_count.date) AS date, vd_count.count,
+						date_trunc('week', vd_count.date) AS date_week
+
+					FROM 	vd_count
+						INNER JOIN virtual_domains AS vd ON vd.id = vd_count.vd_id
+
+					WHERE	vd_count.date >= to_timestamp(?)
+						AND vd_count.date <= to_timestamp(?)
+
+					ORDER BY date_week, vd_count.vd_id, date)
+
+					UNION ALL
+
+					(SELECT DISTINCT ON (vd.description)
+				       		vd.description, extract(epoch from vd_count.date) AS date, vd_count.count,
+						date_trunc('week', vd_count.date) AS date_week
+
+					FROM 	vd_count
+						INNER JOIN virtual_domains AS vd ON vd.id = vd_count.vd_id
+
+					ORDER  BY vd.description, date DESC)
+				",
+	get_graph_total =>	"	SELECT	id, extract(epoch from date) AS date, count
+
+					FROM 	total_count
+					
+					WHERE	date >= to_timestamp(?)
+						AND date <= to_timestamp(?)
+				",
 	update_uptime =>	"	UPDATE	aps
 	
 					SET	uptime = (?),
@@ -876,9 +910,10 @@ WHERE 	aps.active = true
 # Get all total counts
 sub get_graph_total{
 	my $self = shift;
+	my ($start, $end) = @_;
 	
 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_total});
-	$self->{_sth}->execute();
+	$self->{_sth}->execute($start, $end);
 	
 	my $count = $self->{_sth}->fetchall_hashref("id");
 	$self->{_sth}->finish();
@@ -924,6 +959,26 @@ sub get_graph_wlc_all{
 		$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_wlc_week});
 	} else {
 		$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_wlc_all});
+	}
+	
+	$self->{_sth}->execute($start, $end);
+	
+	my $count = $self->{_sth}->fetchall_arrayref({});
+	$self->{_sth}->finish();
+	
+	return $count;
+}
+
+# Get all VD counts for all VDs
+sub get_graph_vd_all{
+	my $self = shift;
+	my ($start, $end) = @_;
+	
+	if(($end - $start) > (3 * 31 * 24 * 60 * 60)){
+		# if more than 3 months, load weekly data
+		$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_vd_week});
+	} else {
+		$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_vd_all});
 	}
 	
 	$self->{_sth}->execute($start, $end);
