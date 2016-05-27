@@ -228,13 +228,10 @@ sub update_from_prime{
 			# all APs -- this is the authorative source
 			$root_aps = $aps;			
 		}
-		
-		# PI is emo, wait a bit
-		sleep(5);
 	}
 	
 	# at this point we should have all locations
-	# and what VDs they belong to	
+	# and what VDs they belong to
 	# iterate through locations, add/remove, fix mapping
 	update_locations();
 	
