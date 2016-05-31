@@ -25,7 +25,7 @@ use lib $aplol_dir;
 use aplol;
 my $aplol = aplol->new();
 my %config = $aplol->get_config();
-my (%locations, $root_aps);
+my (%locations, $root_aps, $time_start);
 
 # Log
 sub log_it{
@@ -40,6 +40,12 @@ sub debug_log{
 # Logs error-stuff
 sub error_log{
 	$aplol->error_log("ciscopi-aps", "@_");
+}
+
+# Shows runtime
+sub show_runtime{
+	my $runtime = time() - $time_start;
+	log_it("Took $runtime seconds to complete.");
 }
 
 # fetch PI API content
@@ -78,6 +84,7 @@ sub get_json{
 				use Data::Dumper;
 				print Dumper($url_content);
 				error_log($header_info);
+				show_runtime();
 				die(error_log("Malformed output from \$url_content; '$newurl'"));
 			};
 			
@@ -98,9 +105,11 @@ sub get_json{
 				$newurl = $url . "&.firstResult=" . ($last + 1);
 				next;
 			} else {
+				show_runtime();
 				die(error_log("Wrong 'first' and 'count' in JSON."));
 			}
 		} else {
+			show_runtime();
 			die(error_log("No content returned from get_url()."));
 		}
 	}
@@ -174,6 +183,7 @@ sub get_aps{
 			unless($apinfo->{'accessPointDetailsDTO'}->{'name'}){
 				use Data::Dumper;
 				print Dumper($apinfo);
+				show_runtime();
 				die(error_log("Malformed AP."));
 			}
 
@@ -493,6 +503,7 @@ unless (flock(DATA, LOCK_EX|LOCK_NB)) {
 }
 
 # connect
+$time_start = time(); # set start time
 $aplol->connect();
 
 # update info from PI
@@ -506,6 +517,9 @@ update_alarms();
 
 # disconnect
 $aplol->disconnect();
+
+# how long did it take?
+show_runtime();
 
 
 __DATA__

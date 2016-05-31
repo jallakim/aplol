@@ -53,30 +53,6 @@ sub port_number{
         return int($chassis * ($linecard * 48) + $port_number);
 }
 
-# Returns days since epoch
-sub date_to_epoch{
-	my $date = shift;
-	my ($year, $month, $day) = split('\-', $date);
-	
-	# expects month 0-11, where 11 is december
-	$month--;
-
-	# dirty fix to workaround timezones so that we get pretty 'months'
-	my $hour = 0;
-	if(($month > 2) && ($month < 10)){
-		# April - October
-		$hour = 2;
-	} else {
-		# November - March
-		$hour = 1;
-	} 
-	
-	# epoch
-	my $epoch = ::timelocal(0,0,$hour,$day,$month,$year);
-
-	return ($epoch * 1000); # in milliseconds
-}
-
 # returns nice uptime
 sub nice_uptime{
 	my $uptime = shift;
@@ -324,6 +300,32 @@ if($page =~ m/^unassigned$/){
 		$aplol->disconnect();
 		exit 0;
 	}
+	
+} elsif($page =~ m/^apdiff$/){
+	## AP's that are not present in PI, or have mismatching information
+	my $aps = $aplol->get_aps_diff();
+	
+	my @json_array;
+	
+	foreach my $ethmac (keys %$aps){
+		my @ap = (
+			$aps->{$ethmac}{name},
+			$ethmac,
+			$aps->{$ethmac}{wlc_name},
+			$aps->{$ethmac}{db_wlc_name},
+			$aps->{$ethmac}{apgroup_name},
+			$aps->{$ethmac}{db_apgroup_name}
+		);
+		push(@json_array, \@ap);
+	}
+	
+	my %json_data;
+	$json_data{data} = \@json_array;
+	my $json = encode_json \%json_data;
+	
+	print header();
+	print $json;
+	
 } elsif($page =~ m/^graph-total$/){
 	## Total number of AP's
 	my $callback = $cgi->param('callback');

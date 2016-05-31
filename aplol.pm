@@ -392,6 +392,17 @@ my $sql_statements = {
 
 					WHERE 	(aps.ethmac = ?)
 				",
+	empty_aps_diff =>	"	TRUNCATE TABLE aps_diff
+				",
+	add_aps_diff =>		"	INSERT	INTO aps_diff
+						(name, ethmac, wlc_name, db_wlc_name, apgroup_name, db_apgroup_name)
+						
+					VALUES	(?, ?, ?, ?, ?, ?)
+				",
+	get_aps_diff =>		"	SELECT	*
+	
+					FROM	aps_diff
+				",
 };
 
 # Create class
@@ -1064,3 +1075,42 @@ sub array_contains{
 	
 	return 0;
 }
+
+# Empty aps_diff table
+sub empty_aps_diff{
+	my $self = shift;
+	
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{empty_aps_diff});
+	$self->{_sth}->execute();
+	$self->{_sth}->finish();
+}
+
+# Add AP to aps_diff table
+sub add_aps_diff{
+	my $self = shift;
+	my($ethmac, $apname, $wlc_apgroup, $db_apgroup, $wlc_name, $db_wlc_name) = @_;
+	
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{add_aps_diff});
+	$self->{_sth}->execute($apname, $ethmac, $wlc_name, $db_wlc_name, $wlc_apgroup, $db_apgroup);
+	$self->{_sth}->finish();
+}
+
+# Get all AP's from aps_diff table
+sub get_aps_diff{
+	my $self = shift;
+	
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_aps_diff});
+	$self->{_sth}->execute();
+	
+	my $aps = $self->{_sth}->fetchall_hashref("ethmac");
+	$self->{_sth}->finish();
+	
+	return $aps;
+}
+
+
+
+
+
+
+
