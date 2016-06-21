@@ -391,7 +391,7 @@ if($page =~ m/^unassigned$/){
 	}
 	
 	# put into correct structure
-	foreach my $vd (keys %db_hash){
+	foreach my $vd (sort {$a cmp $b} keys %db_hash){
 		my %vd_hash;
 		$vd_hash{name} = "$vd";
 		$vd_hash{data} = \@{$db_hash{$vd}};
@@ -433,7 +433,7 @@ if($page =~ m/^unassigned$/){
 	}
 	
 	# put into correct structure
-	foreach my $wlc (keys %db_hash){
+	foreach my $wlc (sort {$a cmp $b} keys %db_hash){
 		my %wlc_hash;
 		$wlc_hash{name} = "$wlc";
 		$wlc_hash{data} = \@{$db_hash{$wlc}};
