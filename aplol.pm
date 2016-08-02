@@ -403,6 +403,11 @@ my $sql_statements = {
 	
 					FROM	aps_diff
 				",
+	add_log =>		"	INSERT	INTO log
+						(ap_id, username, caseid, message)
+						
+					VALUES	(?, ?, ?, ?)
+				",
 };
 
 # Create class
@@ -1108,8 +1113,15 @@ sub get_aps_diff{
 	return $aps;
 }
 
-
-
+# Insert log entry
+sub add_log{
+	my $self = shift;
+	my ($ap_id, $username, $caseid, $message) = @_;
+	
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{add_log});
+	$self->{_sth}->execute($ap_id, $username, $caseid, $message);
+	$self->{_sth}->finish();
+}
 
 
 
