@@ -228,8 +228,8 @@ if($page =~ m/^unassigned$/){
 		$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
 
 		my $ap_name;
-		if($aps->{$ethmac}{associated}){
-			# it's online, and we should have OID-info
+		if($aps->{$ethmac}{associated} && !($aps->{$ethmac}{apgroup_name} =~ m/^undef$/)){
+			# it's online, and we have OID-info (aka AP-group is not 'undef')
 			# make HTML-link
 			$ap_name = qq(<a href="/apgroup.pl?ethmac=$ethmac&action=select">$aps->{$ethmac}{name}</a>);
 		} else {
