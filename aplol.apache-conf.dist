@@ -1,0 +1,56 @@
+<VirtualHost *:80>
+	ServerAdmin aplol@foobar.com
+	ServerName aplol.foobar.com
+	ServerAlias aplol
+
+	RewriteEngine   On
+	RewriteCond     %{HTTPS} off
+	RewriteRule     (.*) https://%{HTTP_HOST}%{REQUEST_URI}
+	RewriteLog      "/var/log/apache2/rewrite.log"
+	RewriteLogLevel 2
+</VirtualHost>
+
+<VirtualHost *:443>
+	ServerAdmin aplol@foobar.com
+	ServerName aplol.foobar.com
+	ServerAlias aplol
+
+	SSLEngine On
+	SSLCertificateFile /etc/apache/ssl/aplol_foobar_com.crt
+	SSLCertificateKeyFile /etc/apache/ssl/aplol_foobar_com.key
+
+	ErrorLog /var/log/apache2/aplol.foobar.com-error_log
+	CustomLog /var/log/apache2/aplol.foobar.com-access_log common
+
+	DocumentRoot /srv/vhosts/aplol.foobar.com
+
+	<Directory /srv/vhosts/aplol.foobar.com>
+		SSLRequireSSL
+
+		Options +FollowSymlinks +ExecCGI
+
+		DirectoryIndex index.html
+		AddHandler cgi-script .pl
+
+		AllowOverride None
+		Require all granted
+		
+		# AD-authentication
+		AuthType Basic
+		AuthBasicProvider ldap
+		AuthName "foobar.com"
+
+		# Bind user (needs read-only access to AD)
+		AuthLDAPBindDN serviceuser@foobar.com
+		AuthLDAPBindPassword supersecretpw
+
+		# Base DN
+		AuthLDAPURL ldap://foobar.com/CN=Users,DC=foobar,DC=com?sAMAccountName NONE
+
+		# apgroup.pl
+		<Files apgroup.pl>
+			# Somegroup
+			Require ldap-group CN=Somegroup,OU=Somedepartment,DC=foobar,DC=com
+		</Files>
+	</Directory>
+</VirtualHost>
