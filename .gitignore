@@ -2,3 +2,4 @@ aplol.conf
 aplol-fetch.sh
 aplol.htpasswd
 aplol-test.pl
+sql-backup/
