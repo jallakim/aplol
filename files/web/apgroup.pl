@@ -5,6 +5,7 @@ use Net::SNMP;
 use Net::SNMP::Util;
 use CGI;
 use Fcntl qw(:flock);
+binmode STDOUT, ":encoding(UTF-8)";
 
 # Load aplol
 my $aplol_dir;
@@ -228,7 +229,7 @@ $select_form
 				$tmp_html = html_print("Set AP-group", "Changing AP-group to '$apgroup'.");
 				$tmp_html .= qq(			
 \t\t\t<br />
-\t\t\t<button class="btn btn-lg btn-primary btn-block" type="button" onClick="window.location.replace('apgroup.html')">Return</button>
+\t\t\t<button class="btn btn-lg btn-primary btn-block" type="button" onClick="window.location.replace('/')">Return</button>
 \t\t</form>
 \t\t<br />
 \t\t<table class="table table-striped table-sm">
