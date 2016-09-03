@@ -5,12 +5,7 @@ use warnings;
 use strict;
 use POSIX qw(strftime);
 use POSIX qw(floor);
-use JSON -support_by_pp;
-use LWP 5.64;
-use LWP::UserAgent;
-use Net::SSL; # needed, else LWP goes into emo-mode
 use Fcntl qw(:flock);
-use Try::Tiny;
 use Date::Parse;
 use Scalar::Util qw/reftype/;
 binmode(STDOUT, ":utf8");
@@ -48,87 +43,18 @@ sub show_runtime{
 	log_it("Took $runtime seconds to complete.");
 }
 
-# fetch PI API content
-sub get_url{
-        my $url = shift;
-        my $full_url = $config{ciscopi}->{baseurl} . "/" . $url;
-
-	$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0; # just to be sure :-D
-	my $ua = LWP::UserAgent->new(proxy => '');
-	my $req = HTTP::Request->new(GET => $full_url);
-	$req->authorization_basic($config{ciscopi}->{username}, $config{ciscopi}->{password});
-	
-	my $res = $ua->request($req);
-	my $content = $res->content();
-	my $header_info = "Status code: " . $res->status_line() . ". Content type: " . $res->content_type();
-	
-	return ($content, $header_info);
-}
-
-# get JSON from PI
-sub get_json{
-	my $url = shift;
-	my $json = new JSON;
-	my $newurl = $url;
-	my @json_content;
-
-	while(1){
-		# iterate through all pagings until done
-		my ($url_content, $header_info) = get_url($newurl);
-	
-		if($url_content){
-			my $json_text;
-			try {
-				$json_text = $json->allow_nonref->utf8->relaxed->escape_slash->loose->allow_singlequote->allow_barekey->decode($url_content);
-			} catch {
-				use Data::Dumper;
-				print Dumper($url_content);
-				error_log($header_info);
-				show_runtime();
-				die(error_log("Malformed output from \$url_content; '$newurl'"));
-			};
-			
-			my $first = $json_text->{queryResponse}->{'@first'};
-			my $last = $json_text->{queryResponse}->{'@last'};
-			my $count = $json_text->{queryResponse}->{'@count'};
-			
-			if($count == 0){
-				# no APs found
-				return [];
-			} elsif(($last + 1) == $count){
-				# this is last page
-				push(@json_content, @{$json_text->{queryResponse}->{'entity'}});
-				last;
-			} elsif(($last + 1) < $count){
-				# more pages
-				push(@json_content, @{$json_text->{queryResponse}->{'entity'}});
-				$newurl = $url . "&.firstResult=" . ($last + 1);
-				next;
-			} else {
-				show_runtime();
-				die(error_log("Wrong 'first' and 'count' in JSON."));
-			}
-		} else {
-			show_runtime();
-			die(error_log("No content returned from get_url()."));
-		}
-	}
-	
-	return \@json_content;
-}
-
 # fetch AP info
 sub get_apinfo{
 	my $vd = shift;
-	my $url = "data/AccessPointDetails.json?.full=true&type=\"UnifiedAp\"&_ctx.domain=$vd";
-	return get_json($url);
+	my $url = "data/AccessPointDetails.json?.full=true&type=\"UnifiedAp\"&_ctx.domain=$vd&.maxResults=1000";
+	return $aplol->get_json($url);
 }
 
 # fetch alarm info
 sub get_alarminfo{
 	my $severity = shift;
-	my $url = "data/Alarms.json?.full=true&severity=$severity&acknowledgementStatus=false&_ctx.domain=ROOT-DOMAIN";
-	return get_json($url);
+	my $url = "data/Alarms.json?.full=true&severity=$severity&acknowledgementStatus=false&_ctx.domain=ROOT-DOMAIN&.maxResults=1000";
+	return $aplol->get_json($url);
 }
 
 # fetch all APs
