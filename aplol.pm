@@ -146,6 +146,19 @@ my $sql_statements = {
 						
 					WHERE	(ethmac = ?)
 				",
+	add_count =>		"	INSERT 	INTO aps_count
+						(type_id, count, type)
+			
+					SELECT	?, ?, ?
+		
+					WHERE	NOT EXISTS (
+						SELECT	id
+						FROM 	aps_count
+						WHERE	(type_id = ?)
+							AND (type = ?)
+							AND (date = 'now()')
+					);
+				",
 	get_vd_count =>		"	SELECT	vd.id,
 						vd.name,
 						COUNT(DISTINCT ap.id) AS count
@@ -159,17 +172,6 @@ my $sql_statements = {
 											
 					GROUP BY vd.id, vd.name
 				",
-	add_vd_count =>		"	INSERT 	INTO vd_count
-						(vd_id, date, count)
-						
-					SELECT	?, ?, ?
-					
-					WHERE	NOT EXISTS (
-						SELECT	id
-						FROM 	vd_count
-						WHERE	(vd_id = ?) AND (date = ?)
-					);
-				",
 	get_wlc_count =>	"	SELECT	wlc.id,
 						wlc.name,
 						COUNT(DISTINCT ap.id) AS count
@@ -181,17 +183,6 @@ my $sql_statements = {
 						AND (ap.active = 'true')
 			
 					GROUP BY wlc.id, wlc.name
-				",
-	add_wlc_count =>	"	INSERT 	INTO wlc_count
-						(wlc_id, date, count)
-			
-					SELECT	?, ?, ?
-		
-					WHERE	NOT EXISTS (
-						SELECT	id
-						FROM 	wlc_count
-						WHERE	(wlc_id = ?) AND (date = ?)
-					);
 				",
 	get_total_count =>	"	SELECT	COUNT(DISTINCT id) AS count
 
@@ -264,86 +255,83 @@ my $sql_statements = {
 
 					WHERE 	(aps.active = true)
 				",
-	get_graph_wlc =>	"	SELECT 	*
+	get_graph_wlc_all =>	"	SELECT 	wlc.name, extract(epoch from count.date) AS date, count.count
 
-					FROM 	wlc_count
-
-					WHERE 	(wlc_id = ?)
-				",				
-	get_graph_wlc_all =>	"	SELECT 	wlc.name, extract(epoch from wlc_count.date) AS date, wlc_count.count
-
-					FROM 	wlc_count
-						INNER JOIN wlc ON wlc.id = wlc_count.wlc_id
+					FROM 	aps_count AS count
+						INNER JOIN wlc ON wlc.id = count.type_id
 						
-					WHERE	wlc_count.date >= to_timestamp(?)
-						AND wlc_count.date <= to_timestamp(?)
+					WHERE	count.date >= to_timestamp(?)
+						AND count.date <= to_timestamp(?)
+						AND count.type = 'wlc'
 				",
-	get_graph_wlc_week =>	"	(SELECT DISTINCT ON (date_week, wlc_count.wlc_id)
-						wlc.name, extract(epoch from wlc_count.date) AS date, wlc_count.count,
-						date_trunc('week', wlc_count.date) AS date_week
+	get_graph_wlc_week =>	"	(SELECT DISTINCT ON (date_week, count.type_id)
+						wlc.name, extract(epoch from count.date) AS date, count.count,
+						date_trunc('week', count.date) AS date_week
 
-					FROM 	wlc_count
-						INNER JOIN wlc ON wlc.id = wlc_count.wlc_id
+					FROM 	aps_count AS count
+						INNER JOIN wlc ON wlc.id = count.type_id
 
-					WHERE	wlc_count.date >= to_timestamp(?)
-						AND wlc_count.date <= to_timestamp(?)
+					WHERE	count.date >= to_timestamp(?)
+						AND count.date <= to_timestamp(?)
+						AND count.type = 'wlc'
 						
-					ORDER BY date_week, wlc_count.wlc_id, date)
+					ORDER BY date_week, count.type_id, date)
 					
 					UNION ALL
 					
 					(SELECT DISTINCT ON (wlc.name)
-				       		wlc.name, extract(epoch from wlc_count.date) AS date, wlc_count.count,
-						date_trunc('week', wlc_count.date) AS date_week
+				       		wlc.name, extract(epoch from count.date) AS date, count.count,
+						date_trunc('week', count.date) AS date_week
 				
-					FROM 	wlc_count
-						INNER JOIN wlc ON wlc.id = wlc_count.wlc_id
+					FROM 	aps_count AS count
+						INNER JOIN wlc ON wlc.id = count.type_id
+						
+					WHERE	count.type = 'wlc'
 
 					ORDER  BY wlc.name, date DESC)
 				",
-	get_graph_vd =>		"	SELECT 	*
+	get_graph_vd_all =>	"	SELECT 	vd.description, extract(epoch from count.date) AS date, count.count
 
-					FROM 	vd_count
+					FROM 	aps_count AS count
+						INNER JOIN virtual_domains AS vd ON vd.id = count.type_id
 
-					WHERE 	(vd_id = ?)
+					WHERE	count.date >= to_timestamp(?)
+						AND count.date <= to_timestamp(?)
+						AND count.type = 'vd'
 				",
-	get_graph_vd_all =>	"	SELECT 	vd.description, extract(epoch from vd_count.date) AS date, vd_count.count
+	get_graph_vd_week =>	"	(SELECT DISTINCT ON (date_week, count.type_id)
+						vd.description, extract(epoch from count.date) AS date, count.count,
+						date_trunc('week', count.date) AS date_week
 
-					FROM 	vd_count
-						INNER JOIN virtual_domains AS vd ON vd.id = vd_count.vd_id
+					FROM 	aps_count AS count
+						INNER JOIN virtual_domains AS vd ON vd.id = count.type_id
 
-					WHERE	vd_count.date >= to_timestamp(?)
-						AND vd_count.date <= to_timestamp(?)
-				",
-	get_graph_vd_week =>	"	(SELECT DISTINCT ON (date_week, vd_count.vd_id)
-						vd.description, extract(epoch from vd_count.date) AS date, vd_count.count,
-						date_trunc('week', vd_count.date) AS date_week
+					WHERE	count.date >= to_timestamp(?)
+						AND count.date <= to_timestamp(?)
+						AND count.type = 'vd'
 
-					FROM 	vd_count
-						INNER JOIN virtual_domains AS vd ON vd.id = vd_count.vd_id
-
-					WHERE	vd_count.date >= to_timestamp(?)
-						AND vd_count.date <= to_timestamp(?)
-
-					ORDER BY date_week, vd_count.vd_id, date)
+					ORDER BY date_week, count.type_id, date)
 
 					UNION ALL
 
 					(SELECT DISTINCT ON (vd.description)
-				       		vd.description, extract(epoch from vd_count.date) AS date, vd_count.count,
-						date_trunc('week', vd_count.date) AS date_week
+				       		vd.description, extract(epoch from count.date) AS date, count.count,
+						date_trunc('week', count.date) AS date_week
 
-					FROM 	vd_count
-						INNER JOIN virtual_domains AS vd ON vd.id = vd_count.vd_id
+					FROM 	aps_count AS count
+						INNER JOIN virtual_domains AS vd ON vd.id = count.type_id
+						
+					WHERE	count.type = 'vd'
 
 					ORDER  BY vd.description, date DESC)
 				",
 	get_graph_total =>	"	SELECT	id, extract(epoch from date) AS date, count
 
-					FROM 	total_count
+					FROM 	aps_count
 					
 					WHERE	date >= to_timestamp(?)
 						AND date <= to_timestamp(?)
+						AND type = 'total'
 				",
 	update_uptime =>	"	UPDATE	aps
 	
@@ -766,6 +754,16 @@ sub update_ap{
 	$self->{_sth}->finish();
 }
 
+# Add count
+sub add_count{
+	my $self = shift;
+	my ($id, $count, $type) = @_;
+	
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{add_count});
+	$self->{_sth}->execute($id, $count, $type, $id, $type);
+	$self->{_sth}->finish();
+}
+
 # Get AP-count for each VD
 sub get_vd_count{
 	my $self = shift;
@@ -779,18 +777,6 @@ sub get_vd_count{
 	return $vd_count;
 }
 
-# Insert VD-count (but only if it doesn't exist already)
-# I.e. we only want one entry per day per VD
-sub add_vd_count{
-	my $self = shift;
-	my ($vd_id, $vd_count) = @_;
-	my $date = date_string_ymd();
-	
-	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{add_vd_count});
-	$self->{_sth}->execute($vd_id, $date, $vd_count, $vd_id, $date);
-	$self->{_sth}->finish();
-}
-
 # Get WLC-count
 sub get_wlc_count{
 	my $self = shift;
@@ -802,18 +788,6 @@ sub get_wlc_count{
 	$self->{_sth}->finish();
 	
 	return $wlc_count;
-}
-
-# Insert WLC-count (but only if it doesn't exist already)
-# I.e. we only want one entry per day per WLC
-sub add_wlc_count{
-	my $self = shift;
-	my ($wlc_id, $wlc_count) = @_;
-	my $date = date_string_ymd();
-	
-	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{add_wlc_count});
-	$self->{_sth}->execute($wlc_id, $date, $wlc_count, $wlc_id, $date);
-	$self->{_sth}->finish();
 }
 
 # Get total count
@@ -837,15 +811,16 @@ sub add_total_count{
 	my $date_like = '\'%' . date_string_ym() . '%\'';
 	
 	my $add_total_query = qq(
-INSERT 	INTO total_count
-	(count)
+INSERT 	INTO aps_count
+	(count, type)
 
-SELECT	$total_count
+SELECT	$total_count, 'total'
 
 WHERE	NOT EXISTS (
 	SELECT	id
-	FROM 	total_count
+	FROM 	aps_count
 	WHERE	date::text LIKE $date_like
+		AND type = 'total'
 );
 );
 
@@ -942,34 +917,6 @@ sub get_graph_total{
 	
 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_total});
 	$self->{_sth}->execute($start, $end);
-	
-	my $count = $self->{_sth}->fetchall_hashref("id");
-	$self->{_sth}->finish();
-	
-	return $count;
-}
-
-# Get all VD counts
-sub get_graph_vd{
-	my $self = shift;
-	my $vd_id = shift;
-	
-	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_vd});
-	$self->{_sth}->execute($vd_id);
-	
-	my $count = $self->{_sth}->fetchall_hashref("id");
-	$self->{_sth}->finish();
-	
-	return $count;
-}
-
-# Get all WLC counts
-sub get_graph_wlc{
-	my $self = shift;
-	my $wlc_id = shift;
-	
-	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_wlc});
-	$self->{_sth}->execute($wlc_id);
 	
 	my $count = $self->{_sth}->fetchall_hashref("id");
 	$self->{_sth}->finish();

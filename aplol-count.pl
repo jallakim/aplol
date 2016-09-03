@@ -34,7 +34,7 @@ sub update_vd_count{
 	my $vd_count = $aplol->get_vd_count();
 	
 	foreach my $vd_id (keys %$vd_count){
-		$aplol->add_vd_count($vd_id, $vd_count->{$vd_id}{count});
+		$aplol->add_count($vd_id, $vd_count->{$vd_id}{count}, 'vd');
 	}
 }
 
@@ -43,7 +43,7 @@ sub update_wlc_count{
 	my $wlc_count = $aplol->get_wlc_count();
 	
 	foreach my $wlc_id (keys %$wlc_count){
-		$aplol->add_wlc_count($wlc_id, $wlc_count->{$wlc_id}{count});
+		$aplol->add_count($wlc_id, $wlc_count->{$wlc_id}{count}, 'wlc');
 	}	
 }
 

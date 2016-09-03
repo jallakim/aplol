@@ -4,50 +4,49 @@
 
 SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
-SET standard_conforming_strings = off;
+SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
-SET escape_string_warning = off;
-
 SET search_path = public, pg_catalog;
-
 SET default_tablespace = '';
-
 SET default_with_oids = false;
 
 --
--- Name: vd_count; Type: TABLE; Schema: public; Owner: aplol; Tablespace: 
+-- Name: aps_diff; Type: TABLE; Schema: public; Owner: aplol; Tablespace: 
 --
 
-CREATE TABLE vd_count (
+CREATE TABLE aps_diff (
     id integer NOT NULL,
-    vd_id integer NOT NULL,
-    date date DEFAULT now() NOT NULL,
-    count integer DEFAULT 0 NOT NULL
+    name character varying NOT NULL,
+    ethmac macaddr NOT NULL,
+    wlc_name character varying DEFAULT 'undef'::character varying NOT NULL,
+    db_wlc_name character varying DEFAULT 'undef'::character varying NOT NULL,
+    apgroup_name character varying DEFAULT 'undef'::character varying NOT NULL,
+    db_apgroup_name character varying DEFAULT 'undef'::character varying NOT NULL
 );
 
 
-ALTER TABLE public.vd_count OWNER TO aplol;
+ALTER TABLE public.aps_diff OWNER TO aplol;
 
 --
--- Name: ap_count_id_seq; Type: SEQUENCE; Schema: public; Owner: aplol
+-- Name: ap_diff_id_seq; Type: SEQUENCE; Schema: public; Owner: aplol
 --
 
-CREATE SEQUENCE ap_count_id_seq
+CREATE SEQUENCE ap_diff_id_seq
     START WITH 1
     INCREMENT BY 1
-    NO MAXVALUE
     NO MINVALUE
+    NO MAXVALUE
     CACHE 1;
 
 
-ALTER TABLE public.ap_count_id_seq OWNER TO aplol;
+ALTER TABLE public.ap_diff_id_seq OWNER TO aplol;
 
 --
--- Name: ap_count_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: aplol
+-- Name: ap_diff_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: aplol
 --
 
-ALTER SEQUENCE ap_count_id_seq OWNED BY vd_count.id;
+ALTER SEQUENCE ap_diff_id_seq OWNED BY aps_diff.id;
 
 
 --
@@ -112,14 +111,36 @@ COMMENT ON COLUMN aps.client_5 IS 'Total number of 5GHz clients connected to AP'
 
 
 --
+-- Name: aps_count; Type: TABLE; Schema: public; Owner: aplol; Tablespace: 
+--
+
+CREATE TABLE aps_count (
+    id integer NOT NULL,
+    date date DEFAULT now() NOT NULL,
+    count integer DEFAULT 0 NOT NULL,
+    type character varying DEFAULT 'default'::character varying NOT NULL,
+    type_id integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.aps_count OWNER TO aplol;
+
+--
+-- Name: COLUMN aps_count.type_id; Type: COMMENT; Schema: public; Owner: aplol
+--
+
+COMMENT ON COLUMN aps_count.type_id IS 'ID of correlating type (i.e. ID for the VD name or ID for the WLC name)';
+
+
+--
 -- Name: aps_id_seq; Type: SEQUENCE; Schema: public; Owner: aplol
 --
 
 CREATE SEQUENCE aps_id_seq
     START WITH 1
     INCREMENT BY 1
-    NO MAXVALUE
     NO MINVALUE
+    NO MAXVALUE
     CACHE 1;
 
 
@@ -130,6 +151,27 @@ ALTER TABLE public.aps_id_seq OWNER TO aplol;
 --
 
 ALTER SEQUENCE aps_id_seq OWNED BY aps.id;
+
+
+--
+-- Name: count_id_seq; Type: SEQUENCE; Schema: public; Owner: aplol
+--
+
+CREATE SEQUENCE count_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.count_id_seq OWNER TO aplol;
+
+--
+-- Name: count_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: aplol
+--
+
+ALTER SEQUENCE count_id_seq OWNED BY aps_count.id;
 
 
 --
@@ -151,8 +193,8 @@ ALTER TABLE public.locations OWNER TO aplol;
 CREATE SEQUENCE locations_id_seq
     START WITH 1
     INCREMENT BY 1
-    NO MAXVALUE
     NO MINVALUE
+    NO MAXVALUE
     CACHE 1;
 
 
@@ -166,37 +208,40 @@ ALTER SEQUENCE locations_id_seq OWNED BY locations.id;
 
 
 --
--- Name: total_count; Type: TABLE; Schema: public; Owner: aplol; Tablespace: 
+-- Name: log; Type: TABLE; Schema: public; Owner: aplol; Tablespace: 
 --
 
-CREATE TABLE total_count (
+CREATE TABLE log (
     id integer NOT NULL,
-    date date DEFAULT now() NOT NULL,
-    count integer DEFAULT 0 NOT NULL
+    ap_id integer DEFAULT 0 NOT NULL,
+    date timestamp with time zone DEFAULT ('now'::text)::timestamp with time zone NOT NULL,
+    username character varying DEFAULT 'undef'::character varying NOT NULL,
+    caseid character varying DEFAULT 'undef'::character varying NOT NULL,
+    message character varying DEFAULT 'undef'::character varying NOT NULL
 );
 
 
-ALTER TABLE public.total_count OWNER TO aplol;
+ALTER TABLE public.log OWNER TO aplol;
 
 --
--- Name: total_count_id_seq; Type: SEQUENCE; Schema: public; Owner: aplol
+-- Name: log_id_seq; Type: SEQUENCE; Schema: public; Owner: aplol
 --
 
-CREATE SEQUENCE total_count_id_seq
+CREATE SEQUENCE log_id_seq
     START WITH 1
     INCREMENT BY 1
-    NO MAXVALUE
     NO MINVALUE
+    NO MAXVALUE
     CACHE 1;
 
 
-ALTER TABLE public.total_count_id_seq OWNER TO aplol;
+ALTER TABLE public.log_id_seq OWNER TO aplol;
 
 --
--- Name: total_count_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: aplol
+-- Name: log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: aplol
 --
 
-ALTER SEQUENCE total_count_id_seq OWNED BY total_count.id;
+ALTER SEQUENCE log_id_seq OWNED BY log.id;
 
 
 --
@@ -219,8 +264,8 @@ ALTER TABLE public.vd_mapping OWNER TO aplol;
 CREATE SEQUENCE vd_mapping_id_seq
     START WITH 1
     INCREMENT BY 1
-    NO MAXVALUE
     NO MINVALUE
+    NO MAXVALUE
     CACHE 1;
 
 
@@ -262,8 +307,8 @@ COMMENT ON COLUMN virtual_domains.name IS 'VD name as defined in PI';
 CREATE SEQUENCE virtual_domains_id_seq
     START WITH 1
     INCREMENT BY 1
-    NO MAXVALUE
     NO MINVALUE
+    NO MAXVALUE
     CACHE 1;
 
 
@@ -290,49 +335,14 @@ CREATE TABLE wlc (
 ALTER TABLE public.wlc OWNER TO aplol;
 
 --
--- Name: wlc_count; Type: TABLE; Schema: public; Owner: aplol; Tablespace: 
---
-
-CREATE TABLE wlc_count (
-    id integer NOT NULL,
-    wlc_id integer NOT NULL,
-    date date DEFAULT now() NOT NULL,
-    count integer DEFAULT 0 NOT NULL
-);
-
-
-ALTER TABLE public.wlc_count OWNER TO aplol;
-
---
--- Name: wlc_count_id_seq; Type: SEQUENCE; Schema: public; Owner: aplol
---
-
-CREATE SEQUENCE wlc_count_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.wlc_count_id_seq OWNER TO aplol;
-
---
--- Name: wlc_count_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: aplol
---
-
-ALTER SEQUENCE wlc_count_id_seq OWNED BY wlc_count.id;
-
-
---
 -- Name: wlc_id_seq; Type: SEQUENCE; Schema: public; Owner: aplol
 --
 
 CREATE SEQUENCE wlc_id_seq
     START WITH 1
     INCREMENT BY 1
-    NO MAXVALUE
     NO MINVALUE
+    NO MAXVALUE
     CACHE 1;
 
 
@@ -356,6 +366,20 @@ ALTER TABLE ONLY aps ALTER COLUMN id SET DEFAULT nextval('aps_id_seq'::regclass)
 -- Name: id; Type: DEFAULT; Schema: public; Owner: aplol
 --
 
+ALTER TABLE ONLY aps_count ALTER COLUMN id SET DEFAULT nextval('count_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: aplol
+--
+
+ALTER TABLE ONLY aps_diff ALTER COLUMN id SET DEFAULT nextval('ap_diff_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: aplol
+--
+
 ALTER TABLE ONLY locations ALTER COLUMN id SET DEFAULT nextval('locations_id_seq'::regclass);
 
 
@@ -363,14 +387,7 @@ ALTER TABLE ONLY locations ALTER COLUMN id SET DEFAULT nextval('locations_id_seq
 -- Name: id; Type: DEFAULT; Schema: public; Owner: aplol
 --
 
-ALTER TABLE ONLY total_count ALTER COLUMN id SET DEFAULT nextval('total_count_id_seq'::regclass);
-
-
---
--- Name: id; Type: DEFAULT; Schema: public; Owner: aplol
---
-
-ALTER TABLE ONLY vd_count ALTER COLUMN id SET DEFAULT nextval('ap_count_id_seq'::regclass);
+ALTER TABLE ONLY log ALTER COLUMN id SET DEFAULT nextval('log_id_seq'::regclass);
 
 
 --
@@ -395,18 +412,27 @@ ALTER TABLE ONLY wlc ALTER COLUMN id SET DEFAULT nextval('wlc_id_seq'::regclass)
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: aplol
+-- Name: ap_diff_ethmac_key; Type: CONSTRAINT; Schema: public; Owner: aplol; Tablespace: 
 --
 
-ALTER TABLE ONLY wlc_count ALTER COLUMN id SET DEFAULT nextval('wlc_count_id_seq'::regclass);
+ALTER TABLE ONLY aps_diff
+    ADD CONSTRAINT ap_diff_ethmac_key UNIQUE (ethmac);
 
 
 --
--- Name: vdcount_pkey; Type: CONSTRAINT; Schema: public; Owner: aplol; Tablespace: 
+-- Name: ap_diff_name_key; Type: CONSTRAINT; Schema: public; Owner: aplol; Tablespace: 
 --
 
-ALTER TABLE ONLY vd_count
-    ADD CONSTRAINT vdcount_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY aps_diff
+    ADD CONSTRAINT ap_diff_name_key UNIQUE (name);
+
+
+--
+-- Name: ap_diff_pkey; Type: CONSTRAINT; Schema: public; Owner: aplol; Tablespace: 
+--
+
+ALTER TABLE ONLY aps_diff
+    ADD CONSTRAINT ap_diff_pkey PRIMARY KEY (id);
 
 
 --
@@ -434,6 +460,14 @@ ALTER TABLE ONLY aps
 
 
 --
+-- Name: count_pkey; Type: CONSTRAINT; Schema: public; Owner: aplol; Tablespace: 
+--
+
+ALTER TABLE ONLY aps_count
+    ADD CONSTRAINT count_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: locations_location_key; Type: CONSTRAINT; Schema: public; Owner: aplol; Tablespace: 
 --
 
@@ -450,19 +484,11 @@ ALTER TABLE ONLY locations
 
 
 --
--- Name: total_count_date_key; Type: CONSTRAINT; Schema: public; Owner: aplol; Tablespace: 
+-- Name: log_pkey; Type: CONSTRAINT; Schema: public; Owner: aplol; Tablespace: 
 --
 
-ALTER TABLE ONLY total_count
-    ADD CONSTRAINT total_count_date_key UNIQUE (date);
-
-
---
--- Name: total_count_pkey; Type: CONSTRAINT; Schema: public; Owner: aplol; Tablespace: 
---
-
-ALTER TABLE ONLY total_count
-    ADD CONSTRAINT total_count_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY log
+    ADD CONSTRAINT log_pkey PRIMARY KEY (id);
 
 
 --
@@ -487,14 +513,6 @@ ALTER TABLE ONLY virtual_domains
 
 ALTER TABLE ONLY virtual_domains
     ADD CONSTRAINT virtual_domains_pkey PRIMARY KEY (id);
-
-
---
--- Name: wlc_count_pkey; Type: CONSTRAINT; Schema: public; Owner: aplol; Tablespace: 
---
-
-ALTER TABLE ONLY wlc_count
-    ADD CONSTRAINT wlc_count_pkey PRIMARY KEY (id);
 
 
 --
