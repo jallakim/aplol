@@ -45,7 +45,7 @@ sub print_page{
 				
 				Highcharts.setOptions({
 					global: {
-						useUTC: false
+						useUTC: true
 					}
 				});
 				
