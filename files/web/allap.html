@@ -14,7 +14,8 @@
 			$(document).ready(function() {
 				$('#dynamic').html( '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
 				$('#example').dataTable( {
-					"paginate": false,
+					"paginate": true,
+					"pageLength": 200,
 					"lengthChange": false,
 					"search": {
 						"regex": true,
