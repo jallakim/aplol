@@ -326,6 +326,32 @@ if($page =~ m/^unassigned$/){
 	print header();
 	print $json;
 	
+	
+} elsif($page =~ m/^missingcdp$/){
+	## APs with missing CDP-info
+	my $aps = $aplol->get_missing_cdp_aps();
+
+	my @json_array;
+
+	foreach my $ethmac (keys %$aps){
+		my @ap = (
+			$aps->{$ethmac}{name},
+			$aps->{$ethmac}{ip},
+			$aps->{$ethmac}{model},
+			$aps->{$ethmac}{wlc_name},
+			nice_uptime($aps->{$ethmac}{uptime})
+		);
+		push(@json_array, \@ap);
+	}
+
+	my %json_data;
+	$json_data{data} = \@json_array;
+	my $json = encode_json \%json_data;
+
+	print header();
+	print $json;
+	
+	
 } elsif($page =~ m/^graph-total$/){
 	## Total number of AP's
 	my $callback = $cgi->param('callback');

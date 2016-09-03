@@ -408,6 +408,18 @@ my $sql_statements = {
 						
 					VALUES	(?, ?, ?, ?)
 				",
+	get_missing_cdp_aps =>	"	SELECT	aps.*,
+						wlc.name AS wlc_name
+			
+					FROM	aps
+						INNER JOIN locations AS l ON aps.location_id = l.id
+						INNER JOIN wlc AS wlc ON aps.wlc_id = wlc.id
+			
+					WHERE	(aps.active = true)
+						AND (aps.associated = true)
+						AND (aps.neighbor_name = '')
+						AND aps.model not like '%OEAP%'
+				",
 };
 
 # Create class
@@ -1123,6 +1135,17 @@ sub add_log{
 	$self->{_sth}->finish();
 }
 
-
+# Get AP's with missing CDP-info
+sub get_missing_cdp_aps{
+	my $self = shift;
+	
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_missing_cdp_aps});
+	$self->{_sth}->execute();
+	
+	my $aps = $self->{_sth}->fetchall_hashref("ethmac");
+	$self->{_sth}->finish();
+	
+	return $aps;
+}
 
 
