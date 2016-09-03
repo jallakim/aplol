@@ -121,14 +121,14 @@ sub get_json{
 sub get_apinfo{
 	my $vd = shift;
 	my $url = "data/AccessPointDetails.json?.full=true&type=\"UnifiedAp\"&_ctx.domain=$vd";
-        return get_json($url);
+	return get_json($url);
 }
 
 # fetch alarm info
 sub get_alarminfo{
-        my $severity = shift;
+	my $severity = shift;
 	my $url = "data/Alarms.json?.full=true&severity=$severity&acknowledgementStatus=false&_ctx.domain=ROOT-DOMAIN";
-        return get_json($url);
+	return get_json($url);
 }
 
 # fetch all APs
