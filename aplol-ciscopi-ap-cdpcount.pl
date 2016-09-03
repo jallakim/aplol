@@ -6,7 +6,6 @@ use strict;
 use POSIX qw(strftime);
 use POSIX qw(floor);
 use Fcntl qw(:flock);
-use Try::Tiny;
 use Date::Parse;
 use Scalar::Util qw/reftype/;
 binmode(STDOUT, ":utf8");

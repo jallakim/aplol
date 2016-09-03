@@ -120,9 +120,9 @@ my $sql_statements = {
 	add_ap =>		"	INSERT	INTO aps
 						(name, ethmac, wmac, serial, ip, model, location_id, 
 						wlc_id, associated, uptime, neighbor_name, neighbor_addr,
-						neighbor_port, client_total, client_24, client_5)
+						neighbor_port)
 
-					VALUES	(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+					VALUES	(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				",
 	update_ap =>		"	UPDATE	aps
 	
@@ -138,9 +138,6 @@ my $sql_statements = {
 						neighbor_name = (?),
 						neighbor_addr = (?),
 						neighbor_port = (?),
-						client_total = (?),
-						client_24 = (?),
-						client_5 = (?),
 						updated = 'now()',
 						active = 'true'
 						
@@ -407,6 +404,13 @@ my $sql_statements = {
 						AND (aps.associated = true)
 						AND (aps.neighbor_name = '')
 						AND aps.model not like '%OEAP%'
+				",
+	add_client_count =>	"	INSERT	INTO aps_clients
+						(ap_id, type, count)
+						
+					VALUES	( (SELECT id FROM aps WHERE ethmac = ?), '2.4GHz', ? ),
+						( (SELECT id FROM aps WHERE ethmac = ?), '5GHz', ? ),
+						( (SELECT id FROM aps WHERE ethmac = ?), 'Total', ? )
 				",
 };
 
@@ -794,12 +798,12 @@ sub add_ap{
 				$apinfo->{uptime},
 				$apinfo->{neighbor_name},
 				$apinfo->{neighbor_addr},
-				$apinfo->{neighbor_port},
-				$apinfo->{client_total},
-				$apinfo->{client_24},
-				$apinfo->{client_5}
+				$apinfo->{neighbor_port}
 				);
 	$self->{_sth}->finish();
+	
+	# add client count
+	add_client_count($self, $apinfo);
 }
 
 # Update AP
@@ -819,11 +823,27 @@ sub update_ap{
 				$apinfo->{uptime},
 				$apinfo->{neighbor_name},
 				$apinfo->{neighbor_addr},
-				$apinfo->{neighbor_port},
-				$apinfo->{client_total},
-				$apinfo->{client_24},
-				$apinfo->{client_5},
+				$apinfo->{neighbor_port}
 				$apinfo->{ethmac}
+				);
+	$self->{_sth}->finish();
+	
+	# add client count
+	add_client_count($self, $apinfo);
+}
+
+# Add client count
+sub add_client_count{
+	my $self = shift;
+	my $apinfo = shift;
+
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{add_client_count});
+	$self->{_sth}->execute( $apinfo->{ethmac},
+				$apinfo->{client_24},
+				$apinfo->{ethmac},
+				$apinfo->{client_5},
+				$apinfo->{ethmac},
+				$apinfo->{client_total}
 				);
 	$self->{_sth}->finish();
 }
