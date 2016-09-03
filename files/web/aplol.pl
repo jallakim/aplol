@@ -365,7 +365,7 @@ if($page =~ m/^unassigned$/){
 	} else {
 		# all data
 		$end = time();
-		$start = $end - (365 * 24 * 60 * 60 * 100); # 100 years ago
+		$start = 0; # the beginning
 	}
 	
 	# get all counts
@@ -405,7 +405,7 @@ if($page =~ m/^unassigned$/){
 	} else {
 		# all data
 		$end = time();
-		$start = $end - (365 * 24 * 60 * 60 * 100); # 100 years ago
+		$start = 0; # the beginning
 	}
 	
 	# get all VDs
@@ -447,7 +447,7 @@ if($page =~ m/^unassigned$/){
 	} else {
 		# all data
 		$end = time();
-		$start = $end - (365 * 24 * 60 * 60 * 100); # 100 years ago
+		$start = 0; # the beginning
 	}
 	
 	# get all WLCs
