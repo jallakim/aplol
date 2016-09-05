@@ -823,7 +823,7 @@ sub update_ap{
 				$apinfo->{uptime},
 				$apinfo->{neighbor_name},
 				$apinfo->{neighbor_addr},
-				$apinfo->{neighbor_port}
+				$apinfo->{neighbor_port},
 				$apinfo->{ethmac}
 				);
 	$self->{_sth}->finish();
