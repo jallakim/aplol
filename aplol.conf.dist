@@ -57,5 +57,5 @@
 </snmp>
 
 <binaries>
-
+	snmpwalk = /bin/snmpwalk
 </binaries>
