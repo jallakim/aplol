@@ -114,6 +114,7 @@ sub find_broken_mac{
 
 $aplol->connect();
 my $wlcs = $aplol->get_wlcs();
+my $aps = $aplol->get_active_aps();
 
 # iterate through all WLC's
 foreach my $wlc_name (sort keys %$wlcs){
@@ -174,18 +175,18 @@ foreach my $wlc_name (sort keys %$wlcs){
                                         next;
                                 } else {
                                         # AP has mismatched AP-name
-                                        error_log("AP '$apname' ($ethmac) has invalid name. Should be '$propername'.");
+                                        error_log("AP '$apname' ($ethmac) has invalid name. Should be '$propername'. Location: $aps->{$ethmac}->{location_name}");
                                         log_it("Renaming AP '$apname' to '$propername'.");
                                         
                                         my $apoid = $oids{cLApName} . "." . $ap;
 
                                         my $write_result = $session->set_request(
-                                                -varbindlist => [$apoid, OCTET_STRING, $propername]
+                                               -varbindlist => [$apoid, OCTET_STRING, $propername]
                                         );
 
                                         unless (keys %$write_result){
-                                                error_log("Could not set new AP-name for ap '$apname'.");
-                                                next;
+                                               error_log("Could not set new AP-name for ap '$apname'.");
+                                               next;
                                         }
                                 }
                         }

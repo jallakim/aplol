@@ -405,13 +405,6 @@ my $sql_statements = {
 						AND (aps.neighbor_name = '')
 						AND aps.model not like '%OEAP%'
 				",
-	add_client_count =>	"	INSERT	INTO aps_clients
-						(ap_id, type, count)
-						
-					VALUES	( (SELECT id FROM aps WHERE ethmac = ?), '2.4GHz', ? ),
-						( (SELECT id FROM aps WHERE ethmac = ?), '5GHz', ? ),
-						( (SELECT id FROM aps WHERE ethmac = ?), 'Total', ? )
-				",
 };
 
 # Create class
@@ -428,18 +421,35 @@ sub new{
 	return bless $self, $class;
 }
 
-# Logs stuff to STDOUT and file
+# Logs stuff to file and STDOUT or STDERR
+sub log_stuff{
+	if ($_[0] =~ m/HASH/){
+		#Value is a reference on an anonymous hash
+		shift; # Remove class that is passed to the subroutine
+	}
+	
+	my $script = shift;
+	my $stderr = shift;
+	
+	print $LOG_FILE date_string() . ": [$script] @_\n";
+	unless ($silent_logging){
+		if($stderr){
+			print STDERR date_string() . ": [$script] @_\n";
+		} else {
+			print date_string() . ": [$script] @_\n";
+		}
+	}
+}
+
+
+# Logs normal stuff
 sub log_it{
 	if ($_[0] =~ m/HASH/){
 		#Value is a reference on an anonymous hash
 		shift; # Remove class that is passed to the subroutine
 	}	
 	
-	my $script = shift;
-	print $LOG_FILE date_string() . ": [$script] @_\n";
-	unless ($silent_logging){
-		print date_string() . ": [$script] @_\n";
-	}
+	log_stuff(shift, 0, "@_");
 }
 
 # Logs debug-stuff if debug has been turned on
@@ -450,7 +460,7 @@ sub debug_log{
 	}
 
 	if ($config{switch}->{debug_log}){
-		log_it(shift, "Debug: @_");
+		log_stuff(shift, 0, "Debug: @_");
 	}
 }
 
@@ -461,7 +471,7 @@ sub error_log{
 		shift; # Remove class that is passed to the subroutine
 	}
 
-	log_it(shift, "Error: @_");
+	log_stuff(shift, 1, "Error: @_");
 }
 
 sub enable_silent_logging{
@@ -473,14 +483,19 @@ sub date_string{
 	return POSIX::strftime("%a, %d %b %Y %H:%M:%S %z", localtime(time()));
 }
 
+# Returns YYYY/MM
+sub date_string_ym{
+	return POSIX::strftime("%Y-%m", localtime(time()));
+}
+
 # Returns YYYY-MM-DD
 sub date_string_ymd{
 	return POSIX::strftime("%Y-%m-%d", localtime(time()));
 }
 
-# Returns YYYY/MM
-sub date_string_ym{
-	return POSIX::strftime("%Y-%m", localtime(time()));
+# Returns YYYY-MM-DD HH
+sub date_string_ymdh{
+	return POSIX::strftime("%Y-%m-%d %H", localtime(time()));
 }
 
 # Fetch config-values
@@ -508,7 +523,7 @@ sub connect{
 							'AutoInactiveDestroy' => 1,
 							'pg_enable_utf8' => -1,
 						}) 
-			or die log_it("aplol", "Got error $DBI::errstr when connecting to database.");
+			or die error_log("aplol", "Got error $DBI::errstr when connecting to database.");
 	} else {
 		error_log("aplol", "Could not ping database-server.");
 		exit 1;
@@ -836,14 +851,33 @@ sub update_ap{
 sub add_client_count{
 	my $self = shift;
 	my $apinfo = shift;
+	my $date_like = '\'%' . date_string_ymdh() . '%\'';
+	
+	# only add one entry per AP per hour
+	my $add_client_count_query = qq(
+INSERT	INTO aps_clients
+	(ap_id, type, count)
+					
+VALUES	( (SELECT id FROM aps WHERE ethmac = ?), '2.4GHz', ? ),
+	( (SELECT id FROM aps WHERE ethmac = ?), '5GHz', ? ),
+	( (SELECT id FROM aps WHERE ethmac = ?), 'Total', ? )
 
-	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{add_client_count});
+WHERE	NOT EXISTS (
+	SELECT	id
+	FROM 	aps_clients
+	WHERE	date::text LIKE $date_like
+		AND (ethmac = ?)
+)
+);
+
+	$self->{_sth} = $self->{_dbh}->prepare($add_client_count_query);
 	$self->{_sth}->execute( $apinfo->{ethmac},
 				$apinfo->{client_24},
 				$apinfo->{ethmac},
 				$apinfo->{client_5},
 				$apinfo->{ethmac},
-				$apinfo->{client_total}
+				$apinfo->{client_total},
+				$apinfo->{ethmac}
 				);
 	$self->{_sth}->finish();
 }
@@ -904,6 +938,7 @@ sub add_total_count{
 	my $total_count = shift;
 	my $date_like = '\'%' . date_string_ym() . '%\'';
 	
+	# onyl add one entry per day
 	my $add_total_query = qq(
 INSERT 	INTO aps_count
 	(count, type)

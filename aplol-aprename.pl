@@ -91,7 +91,7 @@ foreach my $wlc_name (sort keys %$wlcs){
 				);
 				
 				unless (keys %$write_result){
-					error_log("Could not set new AP-name for ap '$apname'.");
+					log_it("Could not set new AP-name for ap '$apname'.");
 					next;
 				}	
 			}
