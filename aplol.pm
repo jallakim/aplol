@@ -854,6 +854,7 @@ sub add_client_count{
 	my $date_like = '\'%' . date_string_ymdh() . '%\'';
 	
 	# only add one entry per AP per hour
+	# TODO: this needs to be fixed... :-D
 	my $add_client_count_query = qq(
 INSERT	INTO aps_clients
 	(ap_id, type, count)
@@ -938,7 +939,7 @@ sub add_total_count{
 	my $total_count = shift;
 	my $date_like = '\'%' . date_string_ym() . '%\'';
 	
-	# onyl add one entry per day
+	# only add one entry per day
 	my $add_total_query = qq(
 INSERT 	INTO aps_count
 	(count, type)
