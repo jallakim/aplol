@@ -91,7 +91,7 @@ sub get_aps{
 
 			# online/offline?
 			my $associated = 0;
-			if( $apinfo->{'accessPointDetailsDTO'}->{'reachabilityStatus'} =~ m/^Reachable$/ ){
+			if( $apinfo->{'accessPointDetailsDTO'}->{'reachabilityStatus'} =~ m/^reachable$/i ){
 				$associated = 1;
 			}
 			
