@@ -301,6 +301,49 @@ if($page =~ m/^unassigned$/){
 		exit 0;
 	}
 	
+} elsif($page =~ m/^ip$/){
+	## All AP's of a specific model
+	my $subnet = $cgi->param('subnet');
+
+	if($subnet){
+		my $aps = $aplol->get_specific_subnet($subnet);
+	
+		my @json_array;
+	
+		foreach my $ethmac (keys %$aps){
+			my $neighbor_addr = $aps->{$ethmac}{neighbor_addr};
+			$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
+		
+			my @ap = (
+				$aps->{$ethmac}{name},
+				$aps->{$ethmac}{ip},
+				$aps->{$ethmac}{model},
+				$aps->{$ethmac}{wlc_name},
+				nice_uptime($aps->{$ethmac}{uptime}),
+				$aps->{$ethmac}{neighbor_name},
+				$neighbor_addr,
+				$aps->{$ethmac}{neighbor_port},
+				port_number($aps->{$ethmac}{neighbor_port})
+			);
+			push(@json_array, \@ap);
+		}
+	
+		my %json_data;
+		$json_data{data} = \@json_array;
+		my $json = encode_json \%json_data;
+		
+		print header();
+		print $json;
+	} else {
+		print CGI::header(
+			-type => 'text/plain',
+			-status => '404',
+			-charset => 'utf-8'
+		);
+		$aplol->disconnect();
+		exit 0;
+	}
+	
 } elsif($page =~ m/^apdiff$/){
 	## AP's that are not present in PI, or have mismatching information
 	my $aps = $aplol->get_aps_diff();

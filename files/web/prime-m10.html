@@ -1,0 +1,55 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		
+		<title>APs being primed @ M10</title>
+		<style type="text/css" title="currentStyle">
+			@import "/css/table_page.css";
+			@import "/css/table.css";
+		</style>
+		<script type="text/javascript" language="javascript" src="/js/jquery.js"></script>
+		<script type="text/javascript" language="javascript" src="/js/jquery.dataTables.js"></script>
+		<script type="text/javascript" charset="utf-8">			
+			$(document).ready(function() {
+				$('#dynamic').html( '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
+				$('#example').dataTable( {
+					"paginate": false,
+					"lengthChange": false,
+					"search": {
+						"regex": true,
+						"caseInsensitive": true
+					},
+					"ajaxSource": '/aplol.pl?p=ip&subnet=10.104.2.0/24',
+					"sorting": [
+						[5,"asc"],
+						[8,"asc"]
+					 ],
+					"columnDefs": [ {
+						"searchable": false,
+						"visible": false,
+						"targets": [ 8 ]
+					}, ],
+					"columns": [
+						{ "title": "AP name" },
+						{ "title": "AP IP" },
+						{ "title": "AP model" },
+						{ "title": "Controller" },
+						{ "title": "Uptime" },
+						{ "title": "Neighbor name" },
+						{ "title": "Neighbor IP" },
+						{ "title": "Neighbor port" },
+						{ "title": "Port number" },
+					]
+				} );
+			} );
+		</script>
+	</head>
+
+	<body id="dt_example">
+		<div id="container">
+			<div id="dynamic"></div>
+			<div class="spacer"></div>
+		</div>
+	</body>
+</html>
