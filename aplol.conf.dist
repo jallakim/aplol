@@ -50,8 +50,6 @@
 
 <snmp>
 	version = 2c
-	read = public
-	write = private
 	timeout = 1
 	retries = 10
 </snmp>

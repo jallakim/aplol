@@ -33,7 +33,7 @@ sub set_apgroup{
 
         my ($session, $error) = Net::SNMP->session(
                 Hostname  => $apinfo->{wlc_ipv4},
-                Community => $config{snmp}->{write},
+                Community => $apinfo->{wlc_snmp_rw},
 		Version   => $config{snmp}->{version},
                 Timeout   => $config{snmp}->{timeout},
                 Retries   => $config{snmp}->{retries},

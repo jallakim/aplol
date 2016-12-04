@@ -60,7 +60,7 @@ foreach my $wlc_name (sort keys %$wlcs){
 	
 	my ($session, $error) = Net::SNMP->session(
 		Hostname  => $wlcs->{$wlc_name}{ipv4},
-		Community => $config{snmp}->{write},
+		Community => $wlcs->{$wlc_name}{snmp_rw},
                 Version   => $config{snmp}->{version},
                 Timeout   => $config{snmp}->{timeout},
                 Retries   => $config{snmp}->{retries},

@@ -44,13 +44,13 @@ sub mac_snmp_to_hex{
 sub find_broken_mac{
         # sometimes Net::SNMP gets gibberish MAC-adresses, that should be valid
         # if that happens, we can fetch it "manually" via snmpwalk
-        my ($switchip, $macoid) = @_;
+        my ($switchip, $snmp_community, $macoid) = @_;
         
         # snmpwalk-options: -Oqv
         #   -O OUTOPTS          Toggle various defaults controlling output display:
         #       q:  quick print for easier parsing
         #       v:  print values only (not OID = value)
-        my $mac = (`/usr/bin/snmpwalk -Oqv -v$config{snmp}->{version} -c$config{snmp}->{read} $switchip $macoid`)[0];
+        my $mac = (`/usr/bin/snmpwalk -Oqv -v$config{snmp}->{version} -c$snmp_community $switchip $macoid`)[0];
         
         return "undef" unless($mac); # needs a value
 
@@ -79,7 +79,7 @@ sub update_apgroups{
 
                 my ($session, $error) = Net::SNMP->session(
                         Hostname  => $wlcs->{$wlc_name}{ipv4},
-                        Community => $config{snmp}->{read},
+                        Community => $wlcs->{$wlc_name}{snmp_ro},
                         Version   => $config{snmp}->{version},
                         Timeout   => $config{snmp}->{timeout},
                         Retries   => $config{snmp}->{retries},
@@ -126,7 +126,7 @@ sub update_apgroups{
                                                 # has to be valid, try fetch manually
 
                                                 my $apmacoid_complete = $oids{bsnAPEntry} . "." . $apmacoid;
-                                                my $fixed_mac = find_broken_mac($wlcs->{$wlc_name}{ipv4}, $apmacoid_complete);
+                                                my $fixed_mac = find_broken_mac($wlcs->{$wlc_name}{ipv4}, $wlcs->{$wlc_name}{snmp_ro}, $apmacoid_complete);
 
                                                 if($fixed_mac =~ m/^$config{regex}->{valid_mac}$/){
                                                         # yay, we found valid

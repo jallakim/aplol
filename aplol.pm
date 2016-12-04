@@ -252,6 +252,18 @@ my $sql_statements = {
 
 					WHERE 	(aps.active = true)
 				",
+	get_specific_subnet =>	"	SELECT 	aps.*,
+						wlc.name AS wlc_name,
+						wlc.ipv4 AS wlc_ipv4,
+						l.location AS location_name
+
+					FROM	aps
+						INNER JOIN locations AS l ON aps.location_id = l.id
+						INNER JOIN wlc AS wlc ON aps.wlc_id = wlc.id
+
+					WHERE 	(aps.active = true)
+						AND (aps.ip << ?)
+				",				
 	get_graph_wlc_all =>	"	SELECT 	wlc.name, extract(epoch from count.date) AS date, count.count
 
 					FROM 	aps_count AS count
@@ -369,6 +381,8 @@ my $sql_statements = {
 	get_apinfo =>		"	SELECT 	aps.*,
 						wlc.name AS wlc_name,
 						wlc.ipv4 AS wlc_ipv4,
+						wlc.snmp_ro AS wlc_snmp_ro,
+						wlc.snmp_rw AS wlc_snmp_rw,
 						l.location AS location_name
 
 					FROM	aps
@@ -1033,6 +1047,20 @@ WHERE 	aps.active = true
 
 	$self->{_sth} = $self->{_dbh}->prepare($specific_model_query);
 	$self->{_sth}->execute();
+	
+	my $aps = $self->{_sth}->fetchall_hashref("ethmac");
+	$self->{_sth}->finish();
+	
+	return $aps;
+}
+
+# Get all AP's with IP's in a specific subnet
+sub get_specific_subnet{
+	my $self = shift;
+	my $subnet = shift;
+
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_specific_subnet});
+	$self->{_sth}->execute($subnet);
 	
 	my $aps = $self->{_sth}->fetchall_hashref("ethmac");
 	$self->{_sth}->finish();

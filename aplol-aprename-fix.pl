@@ -90,26 +90,26 @@ sub valid_mac{
 
 # Find broken MAC
 sub find_broken_mac{
-	# sometimes Net::SNMP gets gibberish MAC-adresses, that should be valid
-	# if that happens, we can fetch it "manually" via snmpwalk
-	my ($oid, $wlcip) = @_;
+        # sometimes Net::SNMP gets gibberish MAC-adresses, that should be valid
+        # if that happens, we can fetch it "manually" via snmpwalk
+        my ($switchip, $snmp_community, $macoid) = @_;
+        
+        # snmpwalk-options: -Oqv
+        #   -O OUTOPTS          Toggle various defaults controlling output display:
+        #       q:  quick print for easier parsing
+        #       v:  print values only (not OID = value)
+        my $mac = (`/usr/bin/snmpwalk -Oqv -v$config{snmp}->{version} -c$snmp_community $switchip $macoid`)[0];
+        
+        return "undef" unless($mac); # needs a value
 
-	my $mac = `$config{binaries}->{snmpwalk} -Oqv -v2c -c$config{snmp}->{read} $wlcip $oid`;
-        
-        # lowercase
-        $mac = lc($mac);
-	
-	# remove quotes and whitespace
-        $mac =~ s/^\s*\"\s*//;
-        $mac =~ s/\s*\"\s*$//;
-        
-	# replace ' ' with ':'
-        $mac =~ s/ /:/g;
-        
-	# pad with zeroes
-	$mac =~ s/(^|:)(?=[0-9a-f](?::|$))/${1}0/gi;
-                
-	return $mac;
+        # remove all non-valid characers
+        # make lowercase + insert ':'
+        # pad with zeroes
+        ($mac = lc($mac) ) =~ s/[^0-9a-fA-F]//g;
+        $mac =~ s/..\K(?=.)/:/g;
+        $mac =~ s/(^|:)(?=[0-9a-fA-F](?::|$))/${1}0/g;
+
+        return $mac;
 }
 
 $aplol->connect();
@@ -127,7 +127,7 @@ foreach my $wlc_name (sort keys %$wlcs){
 	
 	my ($session, $error) = Net::SNMP->session(
 		Hostname  => $wlcs->{$wlc_name}{ipv4},
-		Community => $config{snmp}->{write},
+		Community => $wlcs->{$wlc_name}{snmp_rw},
                 Version   => $config{snmp}->{version},
                 Timeout   => $config{snmp}->{timeout},
                 Retries   => $config{snmp}->{retries},
@@ -155,7 +155,7 @@ foreach my $wlc_name (sort keys %$wlcs){
                                         debug_log("Invalid MAC for AP '$apname' ($ethmac). Trying to fetch manually.");
                                         
                                         my $oid = $oids{cLApIfMacAddress} . "." . $ap;
-                                        $ethmac = find_broken_mac($oid, $wlcs->{$wlc_name}{ipv4});
+                                        $ethmac = find_broken_mac($wlcs->{$wlc_name}{ipv4}, $wlcs->{$wlc_name}{snmp_ro}, $oid);
                                         
                                         unless(valid_mac($ethmac)){
                                                 # still not a valid MAC
