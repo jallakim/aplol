@@ -146,11 +146,8 @@ sub update_apgroups{
 					$wlc_aps->{$apmac}{wlc_name} = $wlc_name;				
 					
 					# update DB
-                                        $aplol->update_apgroup_info($apmac, $apgroup, $apgroupoid_complete);
+                                        $aplol->update_apgroup_info($apmac, $apgroup, $apoid);
                                         debug_log("$apmac, $apgroup, $apgroupoid_complete");
-					
-					
-					
                                 }
                         }
 

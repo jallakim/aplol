@@ -40,8 +40,12 @@ sub set_apgroup{
         );
 
         if ($session){
+		
+		# bsnAPGroupVlanName - 1.3.6.1.4.1.14179.2.2.1.1.30
+		# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.30#oidContent
+		my $apgroup_oid = '1.3.6.1.4.1.14179.2.2.1.1.30.' . $apinfo->{ap_oid};
                 my $write_result = $session->set_request(
-                        -varbindlist => [$apinfo->{apgroup_oid}, OCTET_STRING, $apgroup]
+                        -varbindlist => [$apgroup_oid, OCTET_STRING, $apgroup]
                 );
                                 
                 unless (keys %$write_result){
