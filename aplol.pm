@@ -366,7 +366,6 @@ my $sql_statements = {
 	update_apgroup_info =>	"	UPDATE	aps
 	
 					SET	apgroup_name = (?),
-						ap_oid = (?),
 						updated = 'now()'
 						
 					WHERE	(ethmac = ?)
@@ -1154,10 +1153,10 @@ sub reset_alarms{
 # Update AP-group-info (apgroup + OID)
 sub update_apgroup_info{
 	my $self = shift;
-	my ($ethmac, $apgroup_name, $ap_oid) = @_;
+	my ($ethmac, $apgroup_name) = @_;
 	
 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{update_apgroup_info});
-	$self->{_sth}->execute($apgroup_name, $ap_oid, $ethmac);
+	$self->{_sth}->execute($apgroup_name, $ethmac);
 	$self->{_sth}->finish();
 }
 

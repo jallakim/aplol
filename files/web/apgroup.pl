@@ -3,6 +3,7 @@ use warnings;
 use strict;
 use Net::SNMP;
 use Net::SNMP::Util;
+use Net::MAC;
 use CGI;
 use Fcntl qw(:flock);
 binmode STDOUT, ":encoding(UTF-8)";
@@ -38,27 +39,40 @@ sub set_apgroup{
                 Timeout   => $config{snmp}->{timeout},
                 Retries   => $config{snmp}->{retries},
         );
+	
+	if($apinfo->{associated} && $apinfo->{active}){
+		# only allow this for associated and active APs
 
-        if ($session){
+	        if ($session){	
+			# make OID. first we convert the wireless mac to decimal.
+			my $mac = Net::MAC->new('mac' => $apinfo->{wmac});
+			my $dec_mac = $mac->convert(
+				'base' => 10,		# convert from base 16 to base 10
+				'bit_group' => 8,	# octet grouping
+				'delimiter' => '.'	# dot-delimited
+			);
 		
-		# bsnAPGroupVlanName - 1.3.6.1.4.1.14179.2.2.1.1.30
-		# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.30#oidContent
-		my $apgroup_oid = '1.3.6.1.4.1.14179.2.2.1.1.30.' . $apinfo->{ap_oid};
-                my $write_result = $session->set_request(
-                        -varbindlist => [$apgroup_oid, OCTET_STRING, $apgroup]
-                );
+			# bsnAPGroupVlanName - 1.3.6.1.4.1.14179.2.2.1.1.30
+			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.30#oidContent
+			my $apgroup_oid = '1.3.6.1.4.1.14179.2.2.1.1.30.' . $dec_mac;
+	                my $write_result = $session->set_request(
+	                        -varbindlist => [$apgroup_oid, OCTET_STRING, $apgroup]
+	                );
                                 
-                unless (keys %$write_result){
-			$session->close();
-			return (0, "Could not set new AP-group for ap '$apinfo->{name}'.");
-                }
+	                unless (keys %$write_result){
+				$session->close();
+				return (0, "Could not set new AP-group for ap '$apinfo->{name}'.");
+	                }
                 
-                $session->close();
-		return 1;
-        } else {
-                $session->close();
-		return (0, "Could not connect to $apinfo->{wlc_ipv4}: $error");
-        }
+	                $session->close();
+			return 1;
+	        } else {
+	                $session->close();
+			return (0, "Could not connect to $apinfo->{wlc_ipv4}: $error");
+	        }
+	} else {
+		return (0, "AP is not associated and/or active.");
+	}
 }
 
 # return select-list
