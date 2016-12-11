@@ -228,8 +228,8 @@ if($page =~ m/^unassigned$/){
 		$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
 
 		my $ap_name;
-		if($aps->{$ethmac}{associated} && !($aps->{$ethmac}{apgroup_name} =~ m/^undef$/)){
-			# it's online, and we have OID-info (aka AP-group is not 'undef')
+		if($aps->{$ethmac}{associated} && $aps->{$ethmac}{active}){
+			# it's online and active
 			# make HTML-link
 			$ap_name = qq(<a href="/apgroup.pl?ethmac=$ethmac&action=select">$aps->{$ethmac}{name}</a>);
 		} else {
@@ -245,6 +245,49 @@ if($page =~ m/^unassigned$/){
 			$aps->{$ethmac}{neighbor_port},
 			$aps->{$ethmac}{location_name},
 			$aps->{$ethmac}{apgroup_name},
+			port_number($aps->{$ethmac}{neighbor_port}),
+			$ethmac
+		);
+		push(@json_array, \@ap);
+	}
+
+	my %json_data;
+	$json_data{data} = \@json_array;
+	my $json = encode_json \%json_data;
+	
+	print header();
+	print $json;
+	
+} elsif($page =~ m/^apwlc$/){
+	## AP WLC Priority (change/move APs between WLCs)
+	my $aps = $aplol->get_active_aps();
+	
+	my @json_array;
+	
+	foreach my $ethmac (keys %$aps){
+		next if($aps->{$ethmac}{model} =~ m/OEAP/); # don't want OEAP's
+
+		my $neighbor_addr = $aps->{$ethmac}{neighbor_addr};
+		$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
+
+		my $ap_name;
+		if($aps->{$ethmac}{associated} && $aps->{$ethmac}{active}){
+			# it's online and active
+			# make HTML-link
+			$ap_name = qq(<a href="/apwlc.pl?ethmac=$ethmac&action=select">$aps->{$ethmac}{name}</a>);
+		} else {
+			$ap_name = $aps->{$ethmac}{name};
+		}
+			
+		my @ap = (
+			$ap_name,
+			$aps->{$ethmac}{ip},
+			$aps->{$ethmac}{model},
+			$aps->{$ethmac}{wlc_name},
+			$aps->{$ethmac}{neighbor_name},
+			$neighbor_addr,
+			$aps->{$ethmac}{neighbor_port},
+			$aps->{$ethmac}{location_name},
 			port_number($aps->{$ethmac}{neighbor_port}),
 			$ethmac
 		);

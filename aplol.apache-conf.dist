@@ -52,5 +52,11 @@
 			# Somegroup
 			Require ldap-group CN=Somegroup,OU=Somedepartment,DC=foobar,DC=com
 		</Files>
+
+		# apwlc.pl
+		<Files apgroup.pl>
+			# Some other group
+			Require ldap-group CN=Someothergroup,OU=Somedepartment,DC=foobar,DC=com
+		</Files>
 	</Directory>
 </VirtualHost>
