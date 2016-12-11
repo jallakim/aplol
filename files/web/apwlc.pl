@@ -106,9 +106,7 @@ sub set_ap_wlc{
 				},
 			);
 			
-			my $error = 0;
-			my $message = "Could not set WLC (";
-			
+			my $error = 0;		
 			foreach my $priority ( keys %wlc_priority_oid ){
 				my $write_result = $session->set_request(
 					-varbindlist => [
@@ -121,13 +119,11 @@ sub set_ap_wlc{
 				unless (keys %$write_result){
 					$session->close();
 					$error = 1;
-					$message .= "$priority [$wlc_priority_oid{$priority}{wlc}]";
 				}
 			}
 			
 			if ($error){
-				$message .= ").";
-				return ($error, $message);
+				return ($error, "Could not set WLC.");
 			}
 			
 			# new values set successfully
