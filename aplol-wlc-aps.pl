@@ -87,7 +87,7 @@ sub update_apgroups{
 
                 if ($session){
                         my ($result, $error) = snmpwalk(snmp => $session,
-                                                        oids => \%oids );               
+                                                        oids => \%oids );
 
                         unless(keys %$result){
                                 error_log("Could not poll '$wlc_name': $error");

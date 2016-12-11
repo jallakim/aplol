@@ -22,14 +22,9 @@
 						"caseInsensitive": true
 					},
 					"ajaxSource": '/aplol.pl?p=all',
-					"sorting": [
+					"order": [
 						[7,"asc"]
 					 ],
-					"columnDefs": [ {
-						"searchable": false,
-						"visible": false,
-						"targets": [ 8 ]
-					}, ],
 					"columns": [
 						{ "title": "AP name" },
 						{ "title": "AP IP" },
@@ -39,7 +34,11 @@
 						{ "title": "Neighbor IP" },
 						{ "title": "Neighbor port" },
 						{ "title": "Location" },
-						{ "title": "Port number" },
+						{
+							"title": "Port number",
+							"visible": false,
+							"searchable": false,
+						},
 					]
 				} );
 			} );
