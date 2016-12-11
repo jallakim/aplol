@@ -32,16 +32,16 @@ unless (flock(DATA, LOCK_EX|LOCK_NB)) {
 sub set_apgroup{
 	my ($apinfo, $apgroup) = @_;
 
-        my ($session, $error) = Net::SNMP->session(
-                Hostname  => $apinfo->{wlc_ipv4},
-                Community => $apinfo->{wlc_snmp_rw},
-		Version   => $config{snmp}->{version},
-                Timeout   => $config{snmp}->{timeout},
-                Retries   => $config{snmp}->{retries},
-        );
-	
 	if($apinfo->{associated} && $apinfo->{active}){
 		# only allow this for associated and active APs
+		
+	        my ($session, $error) = Net::SNMP->session(
+	                Hostname  => $apinfo->{wlc_ipv4},
+	                Community => $apinfo->{wlc_snmp_rw},
+			Version   => $config{snmp}->{version},
+	                Timeout   => $config{snmp}->{timeout},
+	                Retries   => $config{snmp}->{retries},
+	        );
 
 	        if ($session){	
 			# make OID. first we convert the wireless mac to decimal.
@@ -61,17 +61,17 @@ sub set_apgroup{
                                 
 	                unless (keys %$write_result){
 				$session->close();
-				return (0, "Could not set new AP-group for ap '$apinfo->{name}'.");
+				return (1, "Could not set new AP-group.");
 	                }
                 
 	                $session->close();
-			return 1;
+			return 0;
 	        } else {
 	                $session->close();
-			return (0, "Could not connect to $apinfo->{wlc_ipv4}: $error");
+			return (1, "Could not connect to $apinfo->{wlc_ipv4}: $error");
 	        }
 	} else {
-		return (0, "AP is not associated and/or active.");
+		return (1, "AP is not associated and/or active.");
 	}
 }
 
@@ -184,7 +184,6 @@ if ($ethmac && $action){
 				# only if we have valid info from DB
 			
 				unless($select_form){
-					#$tmp_html .= html_print("Select AP-group", "");
 					my $apgroup = $apinfo->{apgroup_name};
 					$select_form = html_selectform($apgroup);
 					$tmp_html .= qq(
@@ -267,17 +266,17 @@ $select_form
 
 					if($apinfo){
 						# only if we have valid info from DB
-						my ($success, $errormsg) = set_apgroup($apinfo, $apgroup);
+						my ($error, $errormsg) = set_apgroup($apinfo, $apgroup);
 
-						if($success){
+						if($error){
+							$tmp_html .= qq(\t\t\t\t<tr class="danger"><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td><td>$errormsg</td></tr>\n);
+						} else {
 							# update DB
 							$aplol->update_apgroup($mac, $apgroup);
 							$aplol->add_log($apinfo->{id}, $username, $caseid, "AP-group changed from '$oldapgroup' to '$apgroup'.");
 
 							# print success
-							$tmp_html .= qq(\t\t\t\t<tr class="success"><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td><td>-</td></tr>\n);							
-						} else {
-							$tmp_html .= qq(\t\t\t\t<tr class="danger"><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td><td>$errormsg</td></tr>\n);
+							$tmp_html .= qq(\t\t\t\t<tr class="success"><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td><td>-</td></tr>\n);
 						}
 					} else {
 						$tmp_html = html_print("Error", "No or incorrect arguments defined. Try again.", 1);

@@ -3,7 +3,7 @@
 	<head>
 		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 		
-		<title>AP Groups</title>
+		<title>Change AP Groups</title>
 		<style type="text/css" title="currentStyle">
 			@import "/css/table_page.css";
 			@import "/css/table.css";
@@ -65,9 +65,9 @@
 					$('#example tr').each(function(row, tr){
 						if ( $(tr).find('.checkbox-tr').is(':checked') ) {
 							// only interested in checked AP's
-							apgroup = $(tr).find('td:eq(7)').text();
+							wlc = $(tr).find('td:eq(2)').text();
 
-							if(apgroup != "undef"){
+							if(wlc != "unassociated"){
 								// we only want associated AP's
 								ethmac = $(tr).find('td:eq(8)').text();
 
