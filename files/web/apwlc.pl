@@ -22,6 +22,77 @@ my %config = $aplol->get_config();
 # variables
 my $cgi = CGI->new();
 
+my %oids = (
+	# Reset the AP
+	# bsnAPReset - 1.3.6.1.4.1.14179.2.2.1.1.11
+	# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=bsnAPReset#oidContent
+	reset_ap => '1.3.6.1.4.1.14179.2.2.1.1.11.',
+	
+	# Primary WLC
+	primary => {
+		# Primary WLC; name
+		# bsnAPPrimaryMwarName - 1.3.6.1.4.1.14179.2.2.1.1.10
+		# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.10#oidContent
+		name => '1.3.6.1.4.1.14179.2.2.1.1.10.',
+
+		# Primary WLC; IP
+		ip => {	
+			# Primary WLC; IP type
+			# cLApPrimaryControllerAddressType - 1.3.6.1.4.1.9.9.513.1.1.1.1.10
+			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.9.9.513.1.1.1.1.10#oidContent
+			type => '1.3.6.1.4.1.9.9.513.1.1.1.1.10.',
+
+			# Primary WLC; IP address
+			# cLApPrimaryControllerAddress - 1.3.6.1.4.1.9.9.513.1.1.1.1.11
+			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.9.9.513.1.1.1.1.11#oidContent
+			address => '1.3.6.1.4.1.9.9.513.1.1.1.1.11.',
+		},
+	},
+	
+	# Secondary WLC
+	secondary => {
+		# Secondary WLC; name
+		# bsnAPSecondaryMwarName - 1.3.6.1.4.1.14179.2.2.1.1.23
+		# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.23#oidContent
+		name => '1.3.6.1.4.1.14179.2.2.1.1.23.',
+
+		# Secondary WLC; IP
+		ip => {	
+			# Secondary WLC; IP type
+			# cLApSecondaryControllerAddressType - 1.3.6.1.4.1.9.9.513.1.1.1.1.12
+			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.9.9.513.1.1.1.1.12#oidContent
+			type => '1.3.6.1.4.1.9.9.513.1.1.1.1.12.',
+
+			# Secondary WLC; IP address
+			# cLApSecondaryControllerAddress - 1.3.6.1.4.1.9.9.513.1.1.1.1.13
+			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.9.9.513.1.1.1.1.13#oidContent
+			address => '1.3.6.1.4.1.9.9.513.1.1.1.1.13.',
+		},
+	},
+	
+	# Tertiary WLC
+	tertiary => {
+		# Tertiary WLC; name
+		# bsnAPTertiaryMwarName - 1.3.6.1.4.1.14179.2.2.1.1.24
+		# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.24#oidContent
+		name => '1.3.6.1.4.1.14179.2.2.1.1.24.',
+
+		# Tertiary WLC; IP
+		ip => {	
+			# Tertiary WLC; IP type
+			# cLApTertiaryControllerAddressType - 1.3.6.1.4.1.9.9.513.1.1.1.1.14
+			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.9.9.513.1.1.1.1.14#oidContent
+			type => '1.3.6.1.4.1.9.9.513.1.1.1.1.14.',
+
+			# Tertiary WLC; IP address
+			# cLApTertiaryControllerAddress - 1.3.6.1.4.1.9.9.513.1.1.1.1.15
+			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.9.9.513.1.1.1.1.15#oidContent
+			address => '1.3.6.1.4.1.9.9.513.1.1.1.1.15.',
+		},
+	},
+);
+
+
 # We only want 1 instance of this script running
 # Check if already running -- if so, abort.
 unless (flock(DATA, LOCK_EX|LOCK_NB)) {
@@ -29,28 +100,8 @@ unless (flock(DATA, LOCK_EX|LOCK_NB)) {
 	exit 1;
 }
 
-sub get_wlc_priority{
-	my ($session, $wlc_priority_oid) = @_;
-	
-	# fetch all attributes before
-	my $read_result = $session->get_request(
-		-varbindlist => [
-			$wlc_priority_oid->{primary}{oid},
-			$wlc_priority_oid->{secondary}{oid},
-			$wlc_priority_oid->{tertiary}{oid},
-		]
-	);
-
-	unless (keys %$read_result){
-		$session->close();
-		return (1, "Could not read WLC-info.");
-	}
-
-	return 0;
-}
-
 sub set_ap_wlc{
-	my ($apinfo, $wlc_priority, $reboot) = @_;
+	my ($apinfo, $new_wlc, $reboot) = @_;
 
 	if($apinfo->{associated} && $apinfo->{active}){
 		# only allow this for associated and active APs
@@ -70,73 +121,44 @@ sub set_ap_wlc{
 				'bit_group' => 8,     # octet grouping
 				'delimiter' => '.'    # dot-delimited
 			);	
-
-			# Reset the AP
-			# bsnAPReset - 1.3.6.1.4.1.14179.2.2.1.1.11
-			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=bsnAPReset#oidContent
-			my $reset_ap_oid = '1.3.6.1.4.1.14179.2.2.1.1.11.' . $dec_mac;
 			
-			# PRIMARY WLC
-			# bsnAPPrimaryMwarName - 1.3.6.1.4.1.14179.2.2.1.1.10
-			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.10#oidContent
-			my $primary_wlc_oid = '1.3.6.1.4.1.14179.2.2.1.1.10.' . $dec_mac;
+			my $write_result = $session->set_request(
+				-varbindlist => [
+					$oids{primary}{name} . $dec_mac, OCTET_STRING, $new_wlc->{name},
+					$oids{secondary}{name} . $dec_mac, OCTET_STRING, '',
+					$oids{tertiary}{name} . $dec_mac, OCTET_STRING, '',
 
-			# SECONDARY WLC
-			# bsnAPSecondaryMwarName - 1.3.6.1.4.1.14179.2.2.1.1.23
-			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.23#oidContent
-			my $secondary_wlc_oid = '1.3.6.1.4.1.14179.2.2.1.1.23.' . $dec_mac;
+					$oids{primary}{ip}{type} . $dec_mac, INTEGER, 1,
+					$oids{primary}{ip}{address} . $dec_mac, OCTET_STRING, octet_ipv4($new_wlc->{ipv4}),
 
-			# TERTIARY WLC
-			# bsnAPTertiaryMwarName - 1.3.6.1.4.1.14179.2.2.1.1.24
-			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.24#oidContent
-			my $tertiary_wlc_oid = '1.3.6.1.4.1.14179.2.2.1.1.24.' . $dec_mac;
-			
-			my %wlc_priority_oid = (
-				primary => {
-					'wlc' => $wlc_priority->{primary},
-					'oid' => $primary_wlc_oid,
-				},
-				secondary => {
-					'wlc' => $wlc_priority->{secondary},
-					'oid' => $secondary_wlc_oid,
-				},
-				tertiary => {
-					'wlc' => $wlc_priority->{tertiary},
-					'oid' => $tertiary_wlc_oid,
-				},
+					$oids{secondary}{ip}{type} . $dec_mac, INTEGER, 1,
+					$oids{secondary}{ip}{address} . $dec_mac, OCTET_STRING, octet_ipv4('0.0.0.0'),
+
+					$oids{tertiary}{ip}{type} . $dec_mac, INTEGER, 1,
+					$oids{tertiary}{ip}{address} . $dec_mac, OCTET_STRING, octet_ipv4('0.0.0.0'),
+				]
 			);
-			
-			my $error = 0;		
-			foreach my $priority ( keys %wlc_priority_oid ){
-				my $write_result = $session->set_request(
-					-varbindlist => [
-						$wlc_priority_oid{$priority}{oid},
-						OCTET_STRING,
-						$wlc_priority_oid{$priority}{wlc}
-					]
-				);
 
-				unless (keys %$write_result){
-					$session->close();
-					$error = 1;
-				}
+			unless (keys %$write_result){
+				my $error = $session->error();
+				$session->close();
+				return (1, "Could not set WLC: $error");
 			}
-			
-			if ($error){
-				return ($error, "Could not set WLC.");
-			}
-			
+						
 			# new values set successfully
 			# should we reboot?
 			if($reboot){
 				# reboot/restart the AP
 				my $write_result = $session->set_request(
-					-varbindlist => [ $reset_ap_oid, INTEGER, 1 ]
+					-varbindlist => [
+						$oids{reset_ap} . $dec_mac, INTEGER, 1
+					]
 				);
 
 				unless (keys %$write_result){
+					my $error = $session->error();
 					$session->close();
-					return (1, "Could not reboot AP.");
+					return (1, "Could not reboot AP: $error");
 				}
 			}
 									
@@ -149,6 +171,13 @@ sub set_ap_wlc{
 	} else {
 		return (1, "AP is not associated and/or active.");
 	}
+}
+
+# returns octet string
+sub octet_ipv4{
+	my $ipv4 = shift;
+	
+	return pack("C*", split(/\./, $ipv4));
 }
 
 # return select-list
@@ -172,22 +201,6 @@ sub html_selectform{
 	}
 	
 	return ($html);
-}
-
-# return true if wlc is valid
-sub valid_wlc{
-	my $wlc = shift;
-	
-	my $wlcs = $aplol->get_wlcs();
-
-	foreach my $dbwlc (sort keys %$wlcs){
-		if($wlc =~ m/^$dbwlc$/){
-			return 1;
-		}
-	}
-
-	# not valid
-	return 0;
 }
 
 # header/error
@@ -335,7 +348,10 @@ $select_form
 		
 		if($new_wlc && $username && $caseid){
 			# have apgroup + username + caseid
-			if(valid_wlc($new_wlc)){
+			
+			my $wlcs = $aplol->get_wlcs();
+			
+			if($wlcs->{$new_wlc}){
 				# valid WLC
 				
 				my $failed = 0;
@@ -366,13 +382,7 @@ $select_form
 						# only if we have valid info from DB
 						
 						# set our new WLC as primary, and clear all other alternatives
-						my %wlc_priority = (
-							primary => $new_wlc,
-							secondary => '',
-							tertiary => '',
-						);
-																	
-						my ($error, $errormsg) = set_ap_wlc($apinfo, \%wlc_priority, $reboot);
+						my ($error, $errormsg) = set_ap_wlc($apinfo, $wlcs->{$new_wlc}, $reboot);
 
 						if($error){
 							$tmp_html .= qq(\t\t\t\t<tr class="danger"><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td><td>$errormsg</td></tr>\n);
