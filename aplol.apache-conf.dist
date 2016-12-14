@@ -54,7 +54,7 @@
 		</Files>
 
 		# apwlc.pl
-		<Files apgroup.pl>
+		<Files apwlc.pl>
 			# Some other group
 			Require ldap-group CN=Someothergroup,OU=Somedepartment,DC=foobar,DC=com
 		</Files>
