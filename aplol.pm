@@ -96,6 +96,12 @@ my $sql_statements = {
 					
 					WHERE	(location = ?)
 				",
+	get_location_by_id =>	"	SELECT	*
+					
+					FROM	locations
+					
+					WHERE	(id = ?)
+				",
 	get_wlcs =>		"	SELECT 	*
 
 					FROM	wlc
@@ -759,6 +765,20 @@ sub get_location{
 	my $location_item = $self->{_sth}->fetchrow_hashref();
 	$self->{_sth}->finish();
 	
+	return $location_item;
+}
+
+# Get all info for Location
+sub get_location_by_id{
+	my $self = shift;
+	my $location_id = "@_";
+
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_location_by_id});
+	$self->{_sth}->execute($location_id);
+
+	my $location_item = $self->{_sth}->fetchrow_hashref();
+	$self->{_sth}->finish();
+
 	return $location_item;
 }
 
