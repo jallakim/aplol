@@ -849,9 +849,6 @@ sub add_ap{
 				$apinfo->{neighbor_port}
 				);
 	$self->{_sth}->finish();
-	
-	# add client count
-	add_client_count($self, $apinfo);
 }
 
 # Update AP
@@ -872,45 +869,6 @@ sub update_ap{
 				$apinfo->{neighbor_name},
 				$apinfo->{neighbor_addr},
 				$apinfo->{neighbor_port},
-				$apinfo->{ethmac}
-				);
-	$self->{_sth}->finish();
-	
-	# add client count
-	add_client_count($self, $apinfo);
-}
-
-# Add client count
-sub add_client_count{
-	my $self = shift;
-	my $apinfo = shift;
-	my $date_like = '\'%' . date_string_ymdh() . '%\'';
-	
-	# only add one entry per AP per hour
-	# TODO: this needs to be fixed... :-D
-	my $add_client_count_query = qq(
-INSERT	INTO aps_clients
-	(ap_id, type, count)
-					
-VALUES	( (SELECT id FROM aps WHERE ethmac = ?), '2.4GHz', ? ),
-	( (SELECT id FROM aps WHERE ethmac = ?), '5GHz', ? ),
-	( (SELECT id FROM aps WHERE ethmac = ?), 'Total', ? )
-
-WHERE	NOT EXISTS (
-	SELECT	id
-	FROM 	aps_clients
-	WHERE	date::text LIKE $date_like
-		AND (ethmac = ?)
-)
-);
-
-	$self->{_sth} = $self->{_dbh}->prepare($add_client_count_query);
-	$self->{_sth}->execute( $apinfo->{ethmac},
-				$apinfo->{client_24},
-				$apinfo->{ethmac},
-				$apinfo->{client_5},
-				$apinfo->{ethmac},
-				$apinfo->{client_total},
 				$apinfo->{ethmac}
 				);
 	$self->{_sth}->finish();
