@@ -54,7 +54,7 @@ sub get_apinfo{
 sub get_aps{
 	my $vd = "ROOT-DOMAIN";
 	my $pi_aps = get_apinfo($vd);
-	my ($total, $total_with, $total_without);
+	my ($total, $total_with, $total_without) = (0, 0, 0);
 	
 	if($pi_aps){
 		foreach my $apinfo (@$pi_aps){
