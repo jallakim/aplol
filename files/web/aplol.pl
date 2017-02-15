@@ -238,6 +238,7 @@ if($page =~ m/^unassigned$/){
 		
 		my @ap = (
 			$ap_name,
+			$aps->{$ethmac}{ip},
 			$aps->{$ethmac}{model},
 			$aps->{$ethmac}{wlc_name},
 			$aps->{$ethmac}{neighbor_name},
