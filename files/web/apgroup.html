@@ -66,11 +66,11 @@
 					$('#example tr').each(function(row, tr){
 						if ( $(tr).find('.checkbox-tr').is(':checked') ) {
 							// only interested in checked AP's
-							wlc = $(tr).find('td:eq(2)').text();
+							wlc = $(tr).find('td:eq(3)').text();
 
 							if(wlc != "unassociated"){
 								// we only want associated AP's
-								ethmac = $(tr).find('td:eq(8)').text();
+								ethmac = $(tr).find('td:eq(9)').text();
 
 								if(ethmac){
 									// don't add column headers
