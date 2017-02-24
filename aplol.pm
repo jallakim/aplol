@@ -1006,8 +1006,7 @@ sub get_active_aps{
 # Get all AP's of specific model
 sub get_specific_model{
 	my $self = shift;
-	my $model = shift;
-	my $model_like = '\'%' . $model . '%\'';
+	my $model_like = shift;
 	
 	my $specific_model_query = qq(
 SELECT 	aps.*,
@@ -1019,7 +1018,7 @@ FROM	aps
 	INNER JOIN wlc AS wlc ON aps.wlc_id = wlc.id
 
 WHERE 	aps.active = true
-	AND aps.model LIKE $model_like
+	$model_like
 );
 
 	$self->{_sth} = $self->{_dbh}->prepare($specific_model_query);

@@ -307,7 +307,16 @@ if($page =~ m/^unassigned$/){
 	my $model = $cgi->param('m');
 
 	if($model){
-		my $aps = $aplol->get_specific_model($model);
+		my $model_like;
+		if($model =~ m/^non-3702$/){
+			# show all non-3702's
+			$model_like = 'AND aps.model NOT LIKE \'%3702%\'';
+			$model_like .= ' AND aps.model NOT LIKE \'%OEAP%\'';
+			$model_like .= ' AND aps.model NOT LIKE \'%AGN%\'';
+		} else {
+			$model_like = 'AND aps.model LIKE \'%' . $model . '%\'';
+		}
+		my $aps = $aplol->get_specific_model($model_like);
 	
 		my @json_array;
 	
