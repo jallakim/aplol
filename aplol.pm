@@ -403,9 +403,10 @@ my $sql_statements = {
 						
 					VALUES	(?, ?, ?, ?, ?, ?)
 				",
-	get_aps_diff =>		"	SELECT	*
+	get_aps_diff =>		"	SELECT	diff.*, aps.model
 	
-					FROM	aps_diff
+					FROM	aps_diff AS diff
+						INNER JOIN aps ON diff.ethmac = aps.ethmac
 				",
 	add_log =>		"	INSERT	INTO log
 						(ap_id, username, caseid, message)

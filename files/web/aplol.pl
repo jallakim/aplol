@@ -407,6 +407,7 @@ if($page =~ m/^unassigned$/){
 		my @ap = (
 			$aps->{$ethmac}{name},
 			$ethmac,
+			$aps->{$ethmac}{model},
 			$aps->{$ethmac}{wlc_name},
 			$aps->{$ethmac}{db_wlc_name},
 			$aps->{$ethmac}{apgroup_name},
