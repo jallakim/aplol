@@ -93,6 +93,13 @@ sub get_aps{
 			my $associated = 0;
 			if( $apinfo->{'accessPointDetailsDTO'}->{'reachabilityStatus'} =~ m/^reachable$/i ){
 				$associated = 1;
+			} elsif( $apinfo->{'accessPointDetailsDTO'}->{'reachabilityStatus'} =~ m/^unknown$/i ){
+				# possibly associated, but "Admin status" set to "disabled"
+				if( ( $apinfo->{'accessPointDetailsDTO'}->{'unifiedApInfo'}->{'controllerName'} )
+					&& ( $apinfo->{'accessPointDetailsDTO'}->{'adminStatus'} =~ m/^disable$/i )){
+					# associated & admin disabled
+					$associated = 1;
+				}
 			}
 			
 			# controller -- not present if AP is unassociated
