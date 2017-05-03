@@ -121,7 +121,7 @@ foreach my $wlc_name (sort keys %$wlcs){
 	if($wlc_name =~ m/dmz/i){ # skip dmz
 		log_it("Skipping WLC '$wlc_name' ($wlcs->{$wlc_name}{ipv4}).");
 		next;
-	} else {
+	} else {	
                 log_it("Checking AP's on WLC '$wlc_name' ($wlcs->{$wlc_name}{ipv4}).");                
 	}
 	
@@ -145,6 +145,15 @@ foreach my $wlc_name (sort keys %$wlcs){
 
 		foreach my $ap (keys %{$result->{cLApName}}){
 			my $apname = $result->{cLApName}{$ap};
+			
+			unless($result->{cLApIfMacAddress}{$ap}){
+				# No MAC-address present
+				# Observed on 1131 APs trying to join WLC with new software-version
+				# The APs is trying to connect, but is refused due to not supported
+				error_log("No MAC found for AP '$apname'");
+				next;
+			}
+
                         my $ethmac = mac_snmp_to_hex($result->{cLApIfMacAddress}{$ap});
                         
                         if(valid_apname($apname)){
