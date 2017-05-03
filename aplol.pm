@@ -396,6 +396,19 @@ my $sql_statements = {
 
 					WHERE 	(aps.ethmac = ?)
 				",
+	get_apinfo_name =>	"	SELECT 	aps.*,
+						wlc.name AS wlc_name,
+						wlc.ipv4 AS wlc_ipv4,
+						wlc.snmp_ro AS wlc_snmp_ro,
+						wlc.snmp_rw AS wlc_snmp_rw,
+						l.location AS location_name
+
+					FROM	aps
+						INNER JOIN locations AS l ON aps.location_id = l.id
+						INNER JOIN wlc AS wlc ON aps.wlc_id = wlc.id
+
+					WHERE 	(aps.name = ?)
+				",
 	empty_aps_diff =>	"	TRUNCATE TABLE aps_diff
 				",
 	add_aps_diff =>		"	INSERT	INTO aps_diff
@@ -1156,6 +1169,21 @@ sub get_apinfo{
 	
 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_apinfo});
 	$self->{_sth}->execute($ethmac);
+	
+	my $apinfo = $self->{_sth}->fetchrow_hashref();
+	$self->{_sth}->finish();
+	
+	return $apinfo;
+}
+
+# returns apinfo for single AP
+# based on AP-name
+sub get_apinfo_name{
+	my $self = shift;
+	my $apname = shift;
+	
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_apinfo_name});
+	$self->{_sth}->execute($apname);
 	
 	my $apinfo = $self->{_sth}->fetchrow_hashref();
 	$self->{_sth}->finish();
