@@ -357,15 +357,17 @@ my $sql_statements = {
 				",
 	update_alarm =>		"	UPDATE	aps
 	
-					SET	alarm = (?),
+					SET	last_alarm = (?),
+						alarm = (?),
 						updated = 'now()'
-						
+
 					WHERE	(wmac = ?)
 				",
 	reset_alarms =>		"	UPDATE	aps
 	
 					SET	alarm = 'undef',
-						updated = 'now()'
+						last_alarm = to_timestamp(0),
+						updated = now()
 					
 					WHERE	active = true
 				",
@@ -1125,10 +1127,10 @@ sub update_uptime{
 # Update alarm
 sub update_alarm{
 	my $self = shift;
-	my ($wmac, $alarm) = @_;
-	
+	my ($wmac, $alarm_timestamp, $alarm_string) = @_;
+
 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{update_alarm});
-	$self->{_sth}->execute($alarm, $wmac);
+	$self->{_sth}->execute($alarm_timestamp, $alarm_string, $wmac);
 	$self->{_sth}->finish();
 }
 

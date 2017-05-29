@@ -6,6 +6,7 @@ use JSON;
 use Time::Local;
 use POSIX qw(strftime);
 use POSIX qw(floor);
+use Date::Parse;
 
 # Load aplol
 my $aplol_dir;
@@ -131,6 +132,23 @@ if($page =~ m/^unassigned$/){
 	foreach my $ethmac (keys %$aps){
 		my $neighbor_addr = $aps->{$ethmac}{neighbor_addr};
 		$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
+
+		# short timestamp
+		# YYYY-MM-DD, HH:MM
+		my $alarm_timestamp = POSIX::strftime(
+				"%Y-%m-%d, %H:%M",
+				localtime(str2time($aps->{$ethmac}{last_alarm}))
+		);
+
+		# fetch & shorten annotation
+		my $alarm_annotation = $aps->{$ethmac}{alarm};
+		if($alarm_annotation =~ m/^[0-9]+$/){
+			# only if numbers
+			$alarm_annotation =~ s/\s+//;
+		} else {
+			# not just numbers, short it down to max 10 chars
+			$alarm_annotation = substr($alarm_annotation, 0, 10);
+		}
 		
 		my @ap = (
 			$aps->{$ethmac}{name},
@@ -140,7 +158,8 @@ if($page =~ m/^unassigned$/){
 			$neighbor_addr,
 			$aps->{$ethmac}{neighbor_port},
 			$aps->{$ethmac}{location_name},
-			$aps->{$ethmac}{alarm},
+			$alarm_timestamp,
+			$alarm_annotation,
 			port_number($aps->{$ethmac}{neighbor_port})
 		);
 		push(@json_array, \@ap);

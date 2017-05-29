@@ -374,25 +374,27 @@ sub update_alarms{
                                 # Alarm-type is AP
 
                                 # get last annotation
-                                my ($alarm_annotation, $alarm_timestamp) = get_last_alarm_annotation($alarm->{'alarmsDTO'}->{'annotations'});
-				if($alarm_annotation =~ m/^[0-9]+$/){
-					# only if numbers
-					$alarm_annotation =~ s/\s+//;
-				} else {
-					# not just numbers, short it down to max 10 chars
-					$alarm_annotation = substr($alarm_annotation, 0, 10);
-				}
+                                my ($alarm_annotation, $annotation_timestamp) = get_last_alarm_annotation($alarm->{'alarmsDTO'}->{'annotations'});
 
                                 # get ap-name
                                 my $wmac = (split(',', $alarm->{'alarmsDTO'}->{'deviceName'}))[1];
                                 next unless($wmac);
+
+				# timestamps
+				my $alarm_created = $alarm->{'alarmsDTO'}->{'timeStamp'};
+				my $alarm_updated = $alarm->{'alarmsDTO'}->{'lastUpdatedAt'};
+				my $alarm_timestamp = $alarm_updated;
                                 
-				if(floor(str2time($alarm_timestamp)) > floor(str2time($alarm->{'alarmsDTO'}->{'lastUpdatedAt'}))){
+				my $alarm_string = 'undef';
+				if(floor(str2time($annotation_timestamp)) > floor(str2time($alarm_updated))){
 					# only if annotation was created after alarm was updated
-					# lets update DB
-					debug_log("update alarm: $wmac, $alarm_annotation");
-					$aplol->update_alarm($wmac, $alarm_annotation);
+					# we always set the $alarm_updated regardless if we have an annotation
+					$alarm_string = $alarm_annotation;
 				}
+
+				# lets update DB
+				debug_log("update alarm: $wmac, $alarm_timestamp, $alarm_string");
+				$aplol->update_alarm($wmac, $alarm_timestamp, $alarm_string);
                         }
                 }
 	}
