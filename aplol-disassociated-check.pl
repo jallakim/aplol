@@ -53,12 +53,14 @@ unless (flock(DATA, LOCK_EX|LOCK_NB)) {
 $time_start = time(); # set start time
 $aplol->connect();
 
+my %alarms;
 
 while (my $line=<STDIN>){
 	next unless ($line =~ m/AP '(.+)' disassociated/);
 	my $apname = $1;
 	
 	my $apinfo = $aplol->get_apinfo_name($apname);
+	$alarms{$apname} = 1;
 	
 	if($apinfo){
 		# we have info
@@ -70,6 +72,23 @@ while (my $line=<STDIN>){
 		}
 	} else {
 		error_log("Could not get apinfo for AP $apname");
+	}
+}
+
+my $aps = $aplol->get_aps();
+
+foreach my $apethmac (sort keys %$aps){
+	# we only want active + disassociated
+	next unless ($aps->{$apethmac}{active} && !$aps->{$apethmac}{associated});
+	
+	
+	
+	if ($alarms{$aps->{$apethmac}{name}}){
+		# we have alarm for this
+		next;
+	} else {
+		# we have an AP down with no alarm
+		print("We have an AP ($aps->{$apethmac}{name}) that is offline according to the API, but with no alarm.\n");
 	}
 }
 
