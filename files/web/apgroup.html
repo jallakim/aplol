@@ -80,7 +80,8 @@
 						}
 					});
 
-					window.location.href = "/apgroup.pl?action=select&ethmac=" + aps;
+					$("#ethmac").val(aps);
+					$("#apgroupform").submit();
 
 					return false;
 				} );
@@ -92,6 +93,10 @@
 		<div id="container">
 			<div id="dynamic"></div>
 			<div class="spacer"></div>
+			<form style="display: hidden" id="apgroupform" name="apgroupform" action="apgroup.pl" method="post">
+				<input type="hidden" id="ethmac" name="ethmac" value=""/>
+				<input type="hidden" id="action" name="action" value="select"/>
+			</form>
 			<button class="right" id="submit" type="submit">Change AP group for selected AP's</button>
 		</div>
 

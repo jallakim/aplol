@@ -163,7 +163,7 @@ $html .= qq(<!DOCTYPE html>
 </head>
 <body>
 	<div class="container">
-		<form class="form-signin" name="apgroupform" action="apgroup.pl" method="get">
+		<form class="form-signin" name="apgroupform" action="apgroup.pl" method="post">
 );
 
 if ($ethmac && $action){
