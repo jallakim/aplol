@@ -260,7 +260,7 @@ $html .= qq(<!DOCTYPE html>
 </head>
 <body>
 	<div class="container">
-		<form class="form-signin" name="wlcform" action="apwlc.pl" method="get">
+		<form class="form-signin" name="wlcform" action="apwlc.pl" method="post">
 );
 
 if ($ethmac && $action){

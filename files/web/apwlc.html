@@ -79,7 +79,8 @@
 						}
 					});
 
-					window.location.href = "/apwlc.pl?action=select&ethmac=" + aps;
+					$("#ethmac").val(aps);
+					$("#wlcform").submit();
 
 					return false;
 				} );
@@ -91,8 +92,11 @@
 		<div id="container">
 			<div id="dynamic"></div>
 			<div class="spacer"></div>
+			<form style="display: hidden" id="wlcform" name="wlcform" action="apwlc.pl" method="post">
+				<input type="hidden" id="ethmac" name="ethmac" value=""/>
+				<input type="hidden" id="action" name="action" value="select"/>
+			</form>	
 			<button class="right" id="submit" type="submit">Change WLC for selected AP's</button>
 		</div>
-
 	</body>
 </html>
