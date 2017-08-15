@@ -126,6 +126,16 @@
   display:none;
 }
 
+/* Red column */
+.column_red {
+	background-color: rgba(255, 0, 0, 0.1);
+}
+
+/* Green column */
+.column_green {
+	background-color: rgba(0, 255, 0, 0.1);
+}
+
 /* Right-align button */
 button.right {
     float: right;
