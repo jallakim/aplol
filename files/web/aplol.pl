@@ -234,14 +234,22 @@ if($page =~ m/^unassigned$/){
 	print header();
 	print $json;
 
-} elsif($page =~ m/^apgroup$/){
+} elsif($page =~ m/^apgroup(default)?$/){
 	## AP groups
 	my $aps = $aplol->get_active_aps();
+	my $default_only = 0;
+	$default_only = 1 if($page =~ m/^apgroupdefault$/);
 	
 	my @json_array;
 	
 	foreach my $ethmac (keys %$aps){
 		next if($aps->{$ethmac}{model} =~ m/OEAP/); # don't want OEAP's
+		
+		# show only default-group and deactivated, and not in Root Area
+		if($default_only){
+			next unless($aps->{$ethmac}{apgroup_name} =~ m/^(default-group|deaktivert)$/);
+			next if($aps->{$ethmac}{location_name} =~ m/^Root Area$/);
+		}
 
 		my $neighbor_addr = $aps->{$ethmac}{neighbor_addr};
 		$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
@@ -324,6 +332,7 @@ if($page =~ m/^unassigned$/){
 } elsif($page =~ m/^apwlcfix$/){
 	## Fix APs placed on "wrong" WLCs based on VD
 	my $aps = $aplol->get_aps_vd();
+	my $wlcs = $aplol->get_wlcs();
 	
 	my @json_array;
 	
@@ -331,8 +340,14 @@ if($page =~ m/^unassigned$/){
 		next if($aps->{$ethmac}{model} =~ m/OEAP/); # don't want OEAP's
 		next if($aps->{$ethmac}{model} =~ m/1810W/); # don't want 1810Ws
 		next if($aps->{$ethmac}{model} =~ m/AP801/); # don't want AP801s
+		next unless($aps->{$ethmac}{associated}); # only want associated APs
+		
+		# Special case where buildings should be on Lab WLC
+		next if($aps->{$ethmac}{location_name} =~ m/Utsikta/);
 		
 		# check if associated WLC is the one it should be
+		# if it is, we skip it, as we only want to display the ones that doesn't match
+		next if($aps->{$ethmac}{vd_logical_wlc} == $aps->{$ethmac}{wlc_id});
 
 		my $neighbor_addr = $aps->{$ethmac}{neighbor_addr};
 		$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
@@ -350,7 +365,7 @@ if($page =~ m/^unassigned$/){
 			$ap_name,
 			$aps->{$ethmac}{model},
 			$aps->{$ethmac}{wlc_name},
-			$aps->{$ethmac}{wlc_name},
+			$wlcs->{$aps->{$ethmac}{vd_logical_wlc}}{name},
 			$aps->{$ethmac}{neighbor_name},
 			$neighbor_addr,
 			$aps->{$ethmac}{neighbor_port},
@@ -420,7 +435,7 @@ if($page =~ m/^unassigned$/){
 	}
 	
 } elsif($page =~ m/^ip$/){
-	## All AP's of a specific model
+	## All AP's from a specific subnet
 	my $subnet = $cgi->param('subnet');
 
 	if($subnet){

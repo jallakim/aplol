@@ -248,6 +248,7 @@ my $sql_statements = {
 					HAVING COUNT(aps.ethmac) = 1
 	",
 	get_active_aps =>	"	SELECT 	aps.*,
+						wlc.id AS wlc_id,
 						wlc.name AS wlc_name,
 						wlc.ipv4 AS wlc_ipv4,
 						l.location AS location_name
@@ -261,7 +262,6 @@ my $sql_statements = {
 	get_aps_vd =>		"	SELECT	aps.*,
 						wlc.id AS wlc_id,
 						wlc.name AS wlc_name,
-						wlc.ipv4 AS wlc_ipv4,
 						l.id AS location_id,
 						l.location AS location_name,
 						vd.id AS vd_id,
@@ -278,6 +278,9 @@ my $sql_statements = {
 			
 					WHERE	(aps.active = true)
 						AND NOT (l.location = 'Root Area')
+						AND NOT (vd.name = 'ROOT-DOMAIN')
+						AND NOT (vd.name = 'HVI')
+						AND NOT (vd.name = 'PRIV')	
 	",
 	get_specific_subnet =>	"	SELECT 	aps.*,
 						wlc.name AS wlc_name,
@@ -1506,11 +1509,14 @@ sub set_ap_wlc{
 	}
 }
 
-# Get all active APs with extended info, not in "Root Location"
+# Get all active APs with some extended info
+# We exclude APs that are;
+#   - Not in "Root Location"
+#   - Not in VD ROOT-DOMAIN, HVI or PRIV
+#       - These would cause duplicate rows
 sub get_aps_vd{
 	my $self = shift;
 	
-	# fetch active APs that is not in "Root Domain"
 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_aps_vd});
 	$self->{_sth}->execute();
 
