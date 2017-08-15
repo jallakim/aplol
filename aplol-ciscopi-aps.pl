@@ -251,7 +251,7 @@ sub update_location{
 
 # update all AP's
 sub update_aps{
-	my $wlcs = $aplol->get_wlcs();
+	my $wlcs = $aplol->get_wlcs_name();
 	my $db_aps = $aplol->get_aps();
 	
 	foreach my $ethmac (sort keys %$root_aps){
