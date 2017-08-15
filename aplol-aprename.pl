@@ -50,17 +50,17 @@ $aplol->connect();
 my $wlcs = $aplol->get_wlcs();
 
 # iterate through all WLC's
-foreach my $wlc_name (sort keys %$wlcs){
-	if($wlc_name =~ m/dmz/i){ # skip dmz
-		log_it("Skipping WLC '$wlc_name' ($wlcs->{$wlc_name}{ipv4}).");
+foreach my $wlc_id (sort keys %$wlcs){
+	if($wlcs->{$wlc_id}{name} =~ m/dmz/i){ # skip dmz
+		log_it("Skipping WLC '$wlcs->{$wlc_id}{name}' ($wlcs->{$wlc_id}{ipv4}).");
 		next;
 	} else {
-		log_it("Checking AP's on WLC '$wlc_name' ($wlcs->{$wlc_name}{ipv4}).");
+		log_it("Checking AP's on WLC '$wlcs->{$wlc_id}{name}' ($wlcs->{$wlc_id}{ipv4}).");
 	}
 	
 	my ($session, $error) = Net::SNMP->session(
-		Hostname  => $wlcs->{$wlc_name}{ipv4},
-		Community => $wlcs->{$wlc_name}{snmp_rw},
+		Hostname  => $wlcs->{$wlc_id}{ipv4},
+		Community => $wlcs->{$wlc_id}{snmp_rw},
                 Version   => $config{snmp}->{version},
                 Timeout   => $config{snmp}->{timeout},
                 Retries   => $config{snmp}->{retries},
@@ -71,7 +71,7 @@ foreach my $wlc_name (sort keys %$wlcs){
 						oids => \%oids );		
 
 		unless(keys %$result){
-			error_log("Could not poll $wlc_name: $error");
+			error_log("Could not poll $wlcs->{$wlc_id}{name}: $error");
 			$session->close();
 			next;
 		}
@@ -100,7 +100,7 @@ foreach my $wlc_name (sort keys %$wlcs){
 		# close after checking all AP
 		$session->close();
 	} else {
-		error_log("Could not connect to $wlc_name: $error");
+		error_log("Could not connect to $wlcs->{$wlc_id}{name}: $error");
 		$session->close();
 		next;
 	}

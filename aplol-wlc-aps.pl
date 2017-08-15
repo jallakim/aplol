@@ -74,12 +74,12 @@ sub update_apgroups{
         );
 
         # iterate through all WLC's
-        foreach my $wlc_name (sort keys %$wlcs){
-                log_it("Checking AP's on WLC '$wlc_name' ($wlcs->{$wlc_name}{ipv4})...");
+        foreach my $wlc_id (sort keys %$wlcs){
+                log_it("Checking AP's on WLC '$wlcs->{$wlc_id}{name}' ($wlcs->{$wlc_id}{ipv4})...");
 
                 my ($session, $error) = Net::SNMP->session(
-                        Hostname  => $wlcs->{$wlc_name}{ipv4},
-                        Community => $wlcs->{$wlc_name}{snmp_ro},
+                        Hostname  => $wlcs->{$wlc_id}{ipv4},
+                        Community => $wlcs->{$wlc_id}{snmp_ro},
                         Version   => $config{snmp}->{version},
                         Timeout   => $config{snmp}->{timeout},
                         Retries   => $config{snmp}->{retries},
@@ -90,7 +90,7 @@ sub update_apgroups{
                                                         oids => \%oids );
 
                         unless(keys %$result){
-                                error_log("Could not poll '$wlc_name': $error");
+                                error_log("Could not poll '$wlcs->{$wlc_id}{name}': $error");
                                 $session->close();
                                 next;
                         }
@@ -126,7 +126,7 @@ sub update_apgroups{
                                                 # has to be valid, try fetch manually
 
                                                 my $apmacoid_complete = $oids{bsnAPEntry} . "." . $apmacoid;
-                                                my $fixed_mac = find_broken_mac($wlcs->{$wlc_name}{ipv4}, $wlcs->{$wlc_name}{snmp_ro}, $apmacoid_complete);
+                                                my $fixed_mac = find_broken_mac($wlcs->{$wlc_id}{ipv4}, $wlcs->{$wlc_id}{snmp_ro}, $apmacoid_complete);
 
                                                 if($fixed_mac =~ m/^$config{regex}->{valid_mac}$/){
                                                         # yay, we found valid
@@ -143,7 +143,7 @@ sub update_apgroups{
                                         # add to WLC-hash
 					$wlc_aps->{$apmac}{name} = $apname;
 					$wlc_aps->{$apmac}{wlc_apgroup} = $apgroup;
-					$wlc_aps->{$apmac}{wlc_name} = $wlc_name;				
+					$wlc_aps->{$apmac}{wlc_name} = $wlcs->{$wlc_id}{name};				
 					
 					# update DB
                                         $aplol->update_apgroup_info($apmac, $apgroup);
@@ -154,7 +154,7 @@ sub update_apgroups{
                         # close after checking all AP
                         $session->close();
                 } else {
-                        error_log("Could not connect to '$wlc_name': $error");
+                        error_log("Could not connect to '$wlcs->{$wlc_id}{name}': $error");
                         $session->close();
                         next;
                 }
