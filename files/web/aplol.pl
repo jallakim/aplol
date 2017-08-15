@@ -321,6 +321,52 @@ if($page =~ m/^unassigned$/){
 	print header();
 	print $json;
 
+} elsif($page =~ m/^apwlcfix$/){
+	## Fix APs placed on "wrong" WLCs based on VD
+	my $aps = $aplol->get_aps_vd();
+	
+	my @json_array;
+	
+	foreach my $ethmac (keys %$aps){
+		next if($aps->{$ethmac}{model} =~ m/OEAP/); # don't want OEAP's
+		next if($aps->{$ethmac}{model} =~ m/1810W/); # don't want 1810Ws
+		next if($aps->{$ethmac}{model} =~ m/AP801/); # don't want AP801s
+		
+		# check if associated WLC is the one it should be
+
+		my $neighbor_addr = $aps->{$ethmac}{neighbor_addr};
+		$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
+
+		my $ap_name;
+		if($aps->{$ethmac}{associated} && $aps->{$ethmac}{active}){
+			# it's online and active
+			# make HTML-link
+			$ap_name = qq(<a href="/apwlcfix.pl?ethmac=$ethmac&action=select">$aps->{$ethmac}{name}</a>);
+		} else {
+			$ap_name = $aps->{$ethmac}{name};
+		}
+			
+		my @ap = (
+			$ap_name,
+			$aps->{$ethmac}{model},
+			$aps->{$ethmac}{wlc_name},
+			$aps->{$ethmac}{wlc_name},
+			$aps->{$ethmac}{neighbor_name},
+			$neighbor_addr,
+			$aps->{$ethmac}{neighbor_port},
+			$aps->{$ethmac}{location_name},
+			$ethmac
+		);
+		push(@json_array, \@ap);
+	}
+
+	my %json_data;
+	$json_data{data} = \@json_array;
+	my $json = encode_json \%json_data;
+	
+	print header();
+	print $json;
+
 } elsif($page =~ m/^model$/){
 	## All AP's of a specific model
 	my $model = $cgi->param('m');

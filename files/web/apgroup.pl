@@ -1,9 +1,6 @@
 #!/usr/bin/perl
 use warnings;
 use strict;
-use Net::SNMP;
-use Net::SNMP::Util;
-use Net::MAC;
 use CGI;
 use Fcntl qw(:flock);
 binmode STDOUT, ":encoding(UTF-8)";
@@ -27,52 +24,6 @@ my $cgi = CGI->new();
 unless (flock(DATA, LOCK_EX|LOCK_NB)) {
         print "Script is already running. Exiting.";
 	exit 1;
-}
-
-sub set_apgroup{
-	my ($apinfo, $apgroup) = @_;
-
-	if($apinfo->{associated} && $apinfo->{active}){
-		# only allow this for associated and active APs
-		
-	        my ($session, $error) = Net::SNMP->session(
-	                Hostname  => $apinfo->{wlc_ipv4},
-	                Community => $apinfo->{wlc_snmp_rw},
-			Version   => $config{snmp}->{version},
-	                Timeout   => $config{snmp}->{timeout},
-	                Retries   => $config{snmp}->{retries},
-	        );
-
-	        if ($session){	
-			# make OID. first we convert the wireless mac to decimal.
-			my $mac = Net::MAC->new('mac' => $apinfo->{wmac});
-			my $dec_mac = $mac->convert(
-				'base' => 10,		# convert from base 16 to base 10
-				'bit_group' => 8,	# octet grouping
-				'delimiter' => '.'	# dot-delimited
-			);
-		
-			# bsnAPGroupVlanName - 1.3.6.1.4.1.14179.2.2.1.1.30
-			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.30#oidContent
-			my $apgroup_oid = '1.3.6.1.4.1.14179.2.2.1.1.30.' . $dec_mac;
-	                my $write_result = $session->set_request(
-	                        -varbindlist => [$apgroup_oid, OCTET_STRING, $apgroup]
-	                );
-                                
-	                unless (keys %$write_result){
-				$session->close();
-				return (1, "Could not set new AP-group.");
-	                }
-                
-	                $session->close();
-			return 0;
-	        } else {
-	                $session->close();
-			return (1, "Could not connect to $apinfo->{wlc_ipv4}: $error");
-	        }
-	} else {
-		return (1, "AP is not associated and/or active.");
-	}
 }
 
 # return select-list
@@ -266,7 +217,7 @@ $select_form
 
 					if($apinfo){
 						# only if we have valid info from DB
-						my ($error, $errormsg) = set_apgroup($apinfo, $apgroup);
+						my ($error, $errormsg) = $aplol->set_apgroup($apinfo, $apgroup);
 
 						if($error){
 							$tmp_html .= qq(\t\t\t\t<tr class="danger"><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td><td>$errormsg</td></tr>\n);

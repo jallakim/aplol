@@ -257,7 +257,28 @@ my $sql_statements = {
 						INNER JOIN wlc AS wlc ON aps.wlc_id = wlc.id
 
 					WHERE 	(aps.active = true)
-				",
+	",
+	get_aps_vd =>		"	SELECT	aps.*,
+						wlc.id AS wlc_id,
+						wlc.name AS wlc_name,
+						wlc.ipv4 AS wlc_ipv4,
+						l.id AS location_id,
+						l.location AS location_name,
+						vd.id AS vd_id,
+						vd.name AS vd_name,
+						vd.description AS vd_desc,
+						vd.active AS vd_active,
+						vd.logical_wlc AS vd_logical_wlc
+			
+					FROM	aps
+						INNER JOIN locations AS l ON aps.location_id = l.id
+						INNER JOIN wlc AS wlc ON aps.wlc_id = wlc.id
+						INNER JOIN vd_mapping AS vd_map ON aps.location_id = vd_map.location_id
+						INNER JOIN virtual_domains AS vd ON vd_map.vd_id = vd.id
+			
+					WHERE	(aps.active = true)
+						AND NOT (l.location = 'Root Area')
+	",
 	get_specific_subnet =>	"	SELECT 	aps.*,
 						wlc.name AS wlc_name,
 						wlc.ipv4 AS wlc_ipv4,
@@ -441,6 +462,84 @@ my $sql_statements = {
 						AND aps.model not like '%OEAP%'
 				",
 };
+
+my %oids = (
+	# Reset the AP
+	# bsnAPReset - 1.3.6.1.4.1.14179.2.2.1.1.11
+	# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=bsnAPReset#oidContent
+	reset_ap => '1.3.6.1.4.1.14179.2.2.1.1.11.',
+	
+	# Set AP group for an AP
+	# bsnAPGroupVlanName - 1.3.6.1.4.1.14179.2.2.1.1.30
+	# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.30#oidContent
+	apgroup => '1.3.6.1.4.1.14179.2.2.1.1.30.',
+	
+	# Set the WLCs an AP should use
+	wlc => {
+		# Primary WLC
+		primary => {
+			# Primary WLC; name
+			# bsnAPPrimaryMwarName - 1.3.6.1.4.1.14179.2.2.1.1.10
+			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.10#oidContent
+			name => '1.3.6.1.4.1.14179.2.2.1.1.10.',
+
+			# Primary WLC; IP
+			ip => {	
+				# Primary WLC; IP type
+				# cLApPrimaryControllerAddressType - 1.3.6.1.4.1.9.9.513.1.1.1.1.10
+				# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.9.9.513.1.1.1.1.10#oidContent
+				type => '1.3.6.1.4.1.9.9.513.1.1.1.1.10.',
+
+				# Primary WLC; IP address
+				# cLApPrimaryControllerAddress - 1.3.6.1.4.1.9.9.513.1.1.1.1.11
+				# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.9.9.513.1.1.1.1.11#oidContent
+				address => '1.3.6.1.4.1.9.9.513.1.1.1.1.11.',
+			},
+		},
+	
+		# Secondary WLC
+		secondary => {
+			# Secondary WLC; name
+			# bsnAPSecondaryMwarName - 1.3.6.1.4.1.14179.2.2.1.1.23
+			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.23#oidContent
+			name => '1.3.6.1.4.1.14179.2.2.1.1.23.',
+
+			# Secondary WLC; IP
+			ip => {	
+				# Secondary WLC; IP type
+				# cLApSecondaryControllerAddressType - 1.3.6.1.4.1.9.9.513.1.1.1.1.12
+				# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.9.9.513.1.1.1.1.12#oidContent
+				type => '1.3.6.1.4.1.9.9.513.1.1.1.1.12.',
+
+				# Secondary WLC; IP address
+				# cLApSecondaryControllerAddress - 1.3.6.1.4.1.9.9.513.1.1.1.1.13
+				# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.9.9.513.1.1.1.1.13#oidContent
+				address => '1.3.6.1.4.1.9.9.513.1.1.1.1.13.',
+			},
+		},
+	
+		# Tertiary WLC
+		tertiary => {
+			# Tertiary WLC; name
+			# bsnAPTertiaryMwarName - 1.3.6.1.4.1.14179.2.2.1.1.24
+			# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.14179.2.2.1.1.24#oidContent
+			name => '1.3.6.1.4.1.14179.2.2.1.1.24.',
+
+			# Tertiary WLC; IP
+			ip => {	
+				# Tertiary WLC; IP type
+				# cLApTertiaryControllerAddressType - 1.3.6.1.4.1.9.9.513.1.1.1.1.14
+				# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.9.9.513.1.1.1.1.14#oidContent
+				type => '1.3.6.1.4.1.9.9.513.1.1.1.1.14.',
+
+				# Tertiary WLC; IP address
+				# cLApTertiaryControllerAddress - 1.3.6.1.4.1.9.9.513.1.1.1.1.15
+				# http://snmp.cloudapps.cisco.com/Support/SNMP/do/BrowseOID.do?local=en&translate=Translate&objectInput=1.3.6.1.4.1.9.9.513.1.1.1.1.15#oidContent
+				address => '1.3.6.1.4.1.9.9.513.1.1.1.1.15.',
+			},
+		},
+	},
+);
 
 # Create class
 sub new{
@@ -798,8 +897,21 @@ sub get_location_by_id{
 	return $location_item;
 }
 
-# Get all WLC's
+# Get all WLC's by ID
 sub get_wlcs{
+	my $self = shift;
+	
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_wlcs});
+	$self->{_sth}->execute();
+	
+	my $wlcs = $self->{_sth}->fetchall_hashref("id");
+	$self->{_sth}->finish();
+	
+	return $wlcs;
+}
+
+# Get all WLC's by name
+sub get_wlcs_name{
 	my $self = shift;
 	
 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_wlcs});
@@ -810,6 +922,7 @@ sub get_wlcs{
 	
 	return $wlcs;
 }
+
 
 # Get all AP's
 sub get_aps{
@@ -1260,4 +1373,148 @@ sub get_missing_cdp_aps{
 	return $aps;
 }
 
+# Sets a new AP group for the specified AP
+sub set_apgroup{
+	my ($self, $apinfo, $apgroup) = @_;
+	
+	if($apinfo->{associated} && $apinfo->{active}){
+		# only allow this for associated and active APs
+		
+		use Net::MAC;
+		use Net::SNMP;
+		use Net::SNMP::Util;
+				
+	        my ($session, $error) = Net::SNMP->session(
+	                Hostname  => $apinfo->{wlc_ipv4},
+	                Community => $apinfo->{wlc_snmp_rw},
+			Version   => $config{snmp}->{version},
+	                Timeout   => $config{snmp}->{timeout},
+	                Retries   => $config{snmp}->{retries},
+	        );
 
+	        if ($session){	
+			# make OID. first we convert the wireless mac to decimal.
+			my $mac = Net::MAC->new('mac' => $apinfo->{wmac});
+			my $dec_mac = $mac->convert(
+				'base' => 10,		# convert from base 16 to base 10
+				'bit_group' => 8,	# octet grouping
+				'delimiter' => '.'	# dot-delimited
+			);
+		
+	                my $write_result = $session->set_request(
+	                        -varbindlist => [ $oids{apgroup} . $dec_mac, OCTET_STRING, $apgroup ]
+	                );
+                                
+	                unless (keys %$write_result){
+				$session->close();
+				return (1, "Could not set new AP-group.");
+	                }
+                
+	                $session->close();
+			return 0;
+	        } else {
+	                $session->close();
+			return (1, "Could not connect to $apinfo->{wlc_ipv4}: $error");
+	        }
+	} else {
+		return (1, "AP is not associated and/or active.");
+	}
+}
+
+# returns octet string
+sub octet_ipv4{
+	my $ipv4 = shift;
+	
+	return pack("C*", split(/\./, $ipv4));
+}
+
+# Sets the WLCs for an AP, and if it should be rebooted or not
+sub set_ap_wlc{
+	my ($self, $apinfo, $new_wlc, $reboot) = @_;
+
+	if($apinfo->{associated} && $apinfo->{active}){
+		# only allow this for associated and active APs
+		
+		use Net::MAC;
+		use Net::SNMP;
+		use Net::SNMP::Util;
+			
+	        my ($session, $error) = Net::SNMP->session(
+	                Hostname  => $apinfo->{wlc_ipv4},
+	                Community => $apinfo->{wlc_snmp_rw},
+			Version   => $config{snmp}->{version},
+	                Timeout   => $config{snmp}->{timeout},
+	                Retries   => $config{snmp}->{retries},
+	        );
+
+	        if ($session){
+			my $mac = Net::MAC->new('mac' => $apinfo->{wmac});
+			my $dec_mac = $mac->convert(
+				'base' => 10,         # convert from base 16 to base 10
+				'bit_group' => 8,     # octet grouping
+				'delimiter' => '.'    # dot-delimited
+			);	
+			
+			my $write_result = $session->set_request(
+				-varbindlist => [
+					$oids{wlc}{primary}{name} . $dec_mac, OCTET_STRING, $new_wlc->{name},
+					$oids{wlc}{secondary}{name} . $dec_mac, OCTET_STRING, '',
+					$oids{wlc}{tertiary}{name} . $dec_mac, OCTET_STRING, '',
+
+					$oids{wlc}{primary}{ip}{type} . $dec_mac, INTEGER, 1,
+					$oids{wlc}{primary}{ip}{address} . $dec_mac, OCTET_STRING, octet_ipv4($new_wlc->{ipv4}),
+
+					$oids{wlc}{secondary}{ip}{type} . $dec_mac, INTEGER, 1,
+					$oids{wlc}{secondary}{ip}{address} . $dec_mac, OCTET_STRING, octet_ipv4('0.0.0.0'),
+
+					$oids{wlc}{tertiary}{ip}{type} . $dec_mac, INTEGER, 1,
+					$oids{wlc}{tertiary}{ip}{address} . $dec_mac, OCTET_STRING, octet_ipv4('0.0.0.0'),
+				]
+			);
+
+			unless (keys %$write_result){
+				my $error = $session->error();
+				$session->close();
+				return (1, "Could not set WLC: $error");
+			}
+						
+			# new values set successfully
+			# should we reboot?
+			if($reboot){
+				# reboot/restart the AP
+				my $write_result = $session->set_request(
+					-varbindlist => [
+						$oids{reset_ap} . $dec_mac, INTEGER, 1
+					]
+				);
+
+				unless (keys %$write_result){
+					my $error = $session->error();
+					$session->close();
+					return (1, "Could not reboot AP: $error");
+				}
+			}
+									
+	                $session->close();
+			return 0;
+	        } else {
+	                $session->close();
+			return (1, "Could not connect to $apinfo->{wlc_ipv4}: $error");
+	        }
+	} else {
+		return (1, "AP is not associated and/or active.");
+	}
+}
+
+# Get all active APs with extended info, not in "Root Location"
+sub get_aps_vd{
+	my $self = shift;
+	
+	# fetch active APs that is not in "Root Domain"
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_aps_vd});
+	$self->{_sth}->execute();
+
+	my $aps = $self->{_sth}->fetchall_hashref("ethmac");
+	$self->{_sth}->finish();
+	return $aps;
+}
