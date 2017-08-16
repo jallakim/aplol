@@ -65,15 +65,16 @@
 					$('#example tr').each(function(row, tr){
 						if ( $(tr).find('.checkbox-tr').is(':checked') ) {
 							// only interested in checked AP's
-							wlc = $(tr).find('td:eq(2)').text();
+							curr_wlc = $(tr).find('td:eq(2)').text();
 
-							if(wlc != "unassociated"){
+							if(curr_wlc != "unassociated"){
 								// we only want associated AP's
 								ethmac = $(tr).find('td:eq(8)').text();
 
 								if(ethmac){
 									// don't add column headers
-									aps.push(ethmac);
+									new_wlc = $(tr).find('td:eq(3)').text();
+									aps.push(ethmac + ";" + new_wlc);
 								}
 							}
 						}

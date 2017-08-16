@@ -351,12 +351,15 @@ if($page =~ m/^unassigned$/){
 
 		my $neighbor_addr = $aps->{$ethmac}{neighbor_addr};
 		$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
+		
+		# correct WLC
+		my $correct_wlc = $wlcs->{$aps->{$ethmac}{vd_logical_wlc}}{name};
 
 		my $ap_name;
 		if($aps->{$ethmac}{associated} && $aps->{$ethmac}{active}){
 			# it's online and active
 			# make HTML-link
-			$ap_name = qq(<a href="/apwlcfix.pl?ethmac=$ethmac&action=select">$aps->{$ethmac}{name}</a>);
+			$ap_name = qq(<a href="/apwlcfix.pl?ethmac=$ethmac;$correct_wlc&action=select">$aps->{$ethmac}{name}</a>);
 		} else {
 			$ap_name = $aps->{$ethmac}{name};
 		}
@@ -365,7 +368,7 @@ if($page =~ m/^unassigned$/){
 			$ap_name,
 			$aps->{$ethmac}{model},
 			$aps->{$ethmac}{wlc_name},
-			$wlcs->{$aps->{$ethmac}{vd_logical_wlc}}{name},
+			$correct_wlc,
 			$aps->{$ethmac}{neighbor_name},
 			$neighbor_addr,
 			$aps->{$ethmac}{neighbor_port},

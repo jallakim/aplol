@@ -410,6 +410,7 @@ my $sql_statements = {
 					WHERE	(ethmac = ?)
 				",
 	get_apinfo =>		"	SELECT 	aps.*,
+						wlc.id AS wlc_id,
 						wlc.name AS wlc_name,
 						wlc.ipv4 AS wlc_ipv4,
 						wlc.snmp_ro AS wlc_snmp_ro,

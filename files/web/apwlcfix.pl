@@ -26,30 +26,6 @@ unless (flock(DATA, LOCK_EX|LOCK_NB)) {
 	exit 1;
 }
 
-# return select-list
-sub html_selectform{
-	my $current_wlc = shift;
-	my $html = "";
-
-        my $wlcs = $aplol->get_wlcs();
-
-	# iterate through all WLC's
-	foreach my $wlc_id (sort keys %$wlcs){
-		my $wlc_name = $wlcs->{$wlc_id}{name};
-		next if ($wlc_name =~ m/dmz/); # dont want DMZ
-		
-		if($current_wlc =~ m/^$wlc_name$/){
-			# match
-			$html .= qq(\t\t\t\t<option value="$wlc_name" selected>$wlc_name</option>\n);
-		} else {
-			# no match
-			$html .= qq(\t\t\t\t<option value="$wlc_name">$wlc_name</option>\n);
-		}
-	}
-	
-	return ($html);
-}
-
 # header/error
 sub html_print{
 	my ($title, $msg, $error) = @_;
@@ -107,7 +83,7 @@ $html .= qq(<!DOCTYPE html>
 </head>
 <body>
 	<div class="container">
-		<form class="form-signin" name="wlcform" action="apwlc.pl" method="post">
+		<form class="form-signin" name="wlcform" action="apwlcfix.pl" method="post">
 );
 
 if ($ethmac && $action){
@@ -116,31 +92,26 @@ if ($ethmac && $action){
 
 	if($action =~ m/^select$/){
 		# select WLC
-		my $select_form;
 		my $failed = 0;
-		my $tmp_html;
+		my ($tmp_html, $form_printed);
 
-		foreach my $mac (split(',', $ethmac)){
-			# for each mac
+		foreach my $ap (split(',', $ethmac)){
+			# for each AP
+			my ($mac, $new_wlc) = split(';', $ap);
 			my $apinfo = $aplol->get_apinfo($mac);
 
 			if($apinfo){
 				# only if we have valid info from DB
 			
-				unless($select_form){
-					my $current_wlc = $apinfo->{wlc_name};
-					$select_form = html_selectform($current_wlc);
+				unless($form_printed){
+					$form_printed = 1;
 					$tmp_html .= qq(
 \t\t\t<h2 class="form-signin-heading">Change WLC</h2>
-\t\t\t<select class="form-control" name="newwlc">
-$select_form
-\t\t\t</select>
 \t\t\t<label for="inputCase" class="sr-only">Case ID</label>
 \t\t\t<input name="caseid" type="text" id="inputCase" class="form-control" placeholder="Case ID" required>
 \t\t\t<label>Reboot AP? &nbsp;&nbsp;<input name="reboot" type="checkbox" data-toggle="toggle" data-on="Yes" data-off="No" data-onstyle="danger"></label>
 
 \t\t\t<input type="hidden" value="$ethmac" name="ethmac" />
-\t\t\t<input type="hidden" value="$current_wlc" name="oldwlc" />
 \t\t\t<input type="hidden" value="set" name="action" />
 
 \t\t\t<button class="btn btn-lg btn-primary btn-block" type="submit">Submit</button>
@@ -151,7 +122,9 @@ $select_form
 \t\t\t<thead>
 \t\t\t\t<tr>
 \t\t\t\t\t<th class="col-md-2">AP-name</th>
-\t\t\t\t\t<th class="col-md-4">Location</th>
+\t\t\t\t\t<th class="col-md-3">Current WLC</th>
+\t\t\t\t\t<th class="col-md-3">New WLC</th>
+\t\t\t\t\t<th class="col-md-3">Location</th>
 \t\t\t\t</tr>
 \t\t\t</thead>
 \t\t\t<tbody>
@@ -159,7 +132,8 @@ $select_form
 				}
 
 				# add AP to list
-				$tmp_html .= qq(\t\t\t\t<tr><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td></tr>\n);
+				$tmp_html .= qq(\t\t\t\t<tr><td>$apinfo->{name}</td><td>$apinfo->{wlc_name}</td>);
+				$tmp_html .= qq(<td>$new_wlc</td><td>$apinfo->{location_name}</td></tr>\n);
 			} else {
 				$tmp_html = html_print("Error", "No or incorrect arguments defined. Try again.", 1);
 				$failed = 1;
@@ -175,9 +149,6 @@ $select_form
 
 	} elsif ($action =~ m/^set$/){
 		# set WLC
-		my $new_wlc = $cgi->param('newwlc');
-		my $old_wlc = $cgi->param('oldwlc');
-		$old_wlc = "undef" unless $old_wlc;
 		my $caseid = $cgi->param('caseid');
 		
 		# should we reboot the AP after setting the new WLC?
@@ -193,19 +164,16 @@ $select_form
 			$reboot = 0;
 		}
 		
-		if($new_wlc && $username && $caseid){
-			# have apgroup + username + caseid
+		if($username && $caseid){
+			# ethmac + username + caseid
 			
 			my $wlcs = $aplol->get_wlcs_name();
 			
-			if($wlcs->{$new_wlc}){
-				# valid WLC
+			my $failed = 0;
+			my $tmp_html;
 				
-				my $failed = 0;
-				my $tmp_html;
-				
-				$tmp_html = html_print("Set WLC", "Changing WLC to '$new_wlc'.");
-				$tmp_html .= qq(			
+			$tmp_html = html_print("Set WLC", "Changing WLC for APs.");
+			$tmp_html .= qq(			
 \t\t\t<br />
 \t\t\t<button class="btn btn-lg btn-primary btn-block" type="button" onClick="window.location.replace('/')">Return</button>
 \t\t</form>
@@ -221,43 +189,41 @@ $select_form
 \t\t\t<tbody>				
 );
 
-				foreach my $mac (split(',', $ethmac)){
-					# for each mac
-					my $apinfo = $aplol->get_apinfo($mac);
+			foreach my $ap (split(',', $ethmac)){
+				# for each AP
+				my ($mac, $new_wlc) = split(';', $ap);
+				my $apinfo = $aplol->get_apinfo($mac);
 
-					if($apinfo){
-						# only if we have valid info from DB
-						
-						# set our new WLC as primary, and clear all other alternatives
-						my ($error, $errormsg) = $aplol->set_ap_wlc($apinfo, $wlcs->{$new_wlc}, $reboot);
+				if($apinfo){
+					# only if we have valid info from DB
+					
+					# set our new WLC as primary, and clear all other alternatives
+					my ($error, $errormsg) = $aplol->set_ap_wlc($apinfo, $wlcs->{$new_wlc}, $reboot);
 
-						if($error){
-							$tmp_html .= qq(\t\t\t\t<tr class="danger"><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td><td>$errormsg</td></tr>\n);
-						} else {
-							# update DB
-							$aplol->add_log($apinfo->{id}, $username, $caseid, "WLC changed from '$old_wlc' to '$new_wlc'.");
-
-							# print success
-							$tmp_html .= qq(\t\t\t\t<tr class="success"><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td><td>-</td></tr>\n);
-						}
+					if($error){
+						$tmp_html .= qq(\t\t\t\t<tr class="danger"><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td><td>$errormsg</td></tr>\n);
 					} else {
-						$tmp_html = html_print("Error", "No or incorrect arguments defined. Try again.", 1);
-						$failed = 1;
-						last;
+						# update DB
+						$aplol->add_log($apinfo->{id}, $username, $caseid, "WLC changed from '$apinfo->{wlc_name}' to '$new_wlc'.");
+
+						# print success
+						$tmp_html .= qq(\t\t\t\t<tr class="success"><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td><td>-</td></tr>\n);
 					}
+				} else {
+					$tmp_html = html_print("Error", "No or incorrect arguments defined. Try again.", 1);
+					$failed = 1;
+					last;
 				}
-				
-				unless($failed){
-					$tmp_html .= qq(
+			}
+			
+			unless($failed){
+				$tmp_html .= qq(
 \t\t\t</tbody>
 \t\t</table>
 );
-				}
-				
-				$html .= $tmp_html;
-			} else {
-				$html .= html_print("Error", "No or invalid WLC. Please try again.", 1);
 			}
+			
+			$html .= $tmp_html;
 		} else {
 			$html .= html_print("Error", "No or incorrect arguments defined. Try again.", 1);
 		}
