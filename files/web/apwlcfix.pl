@@ -97,7 +97,7 @@ if ($ethmac && $action){
 
 		foreach my $ap (split(',', $ethmac)){
 			# for each AP
-			my ($mac, $new_wlc) = split(';', $ap);
+			my ($mac, $new_wlc) = split('\|', $ap);
 			my $apinfo = $aplol->get_apinfo($mac);
 
 			if($apinfo){
@@ -135,7 +135,7 @@ if ($ethmac && $action){
 				$tmp_html .= qq(\t\t\t\t<tr><td>$apinfo->{name}</td><td>$apinfo->{wlc_name}</td>);
 				$tmp_html .= qq(<td>$new_wlc</td><td>$apinfo->{location_name}</td></tr>\n);
 			} else {
-				$tmp_html = html_print("Error", "No or incorrect arguments defined. Try again.", 1);
+				$tmp_html = html_print("Error", "No or incorrect arguments defined. Try again. $mac - $new_wlc", 1);
 				$failed = 1;
 				last;
 			}
@@ -191,7 +191,7 @@ if ($ethmac && $action){
 
 			foreach my $ap (split(',', $ethmac)){
 				# for each AP
-				my ($mac, $new_wlc) = split(';', $ap);
+				my ($mac, $new_wlc) = split('\|', $ap);
 				my $apinfo = $aplol->get_apinfo($mac);
 
 				if($apinfo){

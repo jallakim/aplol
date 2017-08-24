@@ -359,7 +359,7 @@ if($page =~ m/^unassigned$/){
 		if($aps->{$ethmac}{associated} && $aps->{$ethmac}{active}){
 			# it's online and active
 			# make HTML-link
-			$ap_name = qq(<a href="/apwlcfix.pl?ethmac=$ethmac;$correct_wlc&action=select">$aps->{$ethmac}{name}</a>);
+			$ap_name = qq(<a href="/apwlcfix.pl?ethmac=$ethmac|$correct_wlc&action=select">$aps->{$ethmac}{name}</a>);
 		} else {
 			$ap_name = $aps->{$ethmac}{name};
 		}
