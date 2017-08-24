@@ -118,12 +118,10 @@ my $aps = $aplol->get_active_aps();
 
 # iterate through all WLC's
 foreach my $wlc_id (sort keys %$wlcs){
-	if($wlcs->{$wlc_id}{name} =~ m/dmz/i){ # skip dmz
-		log_it("Skipping WLC '$wlcs->{$wlc_id}{name}' ($wlcs->{$wlc_id}{ipv4}).");
-		next;
-	} else {	
-                log_it("Checking AP's on WLC '$wlcs->{$wlc_id}{name}' ($wlcs->{$wlc_id}{ipv4}).");                
-	}
+	next if ($wlcs->{$wlc_id}{name} =~ m/dmz/i); # skip dmz
+	next unless ($wlcs->{$wlc_id}{active}); # only want active WLCs
+
+	log_it("Checking AP's on WLC '$wlcs->{$wlc_id}{name}' ($wlcs->{$wlc_id}{ipv4}).");                
 	
 	my ($session, $error) = Net::SNMP->session(
 		Hostname  => $wlcs->{$wlc_id}{ipv4},

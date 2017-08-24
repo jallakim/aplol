@@ -75,6 +75,8 @@ sub update_apgroups{
 
         # iterate through all WLC's
         foreach my $wlc_id (sort keys %$wlcs){
+		next unless ($wlcs->{$wlc_id}{active}); # only want active WLCs
+
                 log_it("Checking AP's on WLC '$wlcs->{$wlc_id}{name}' ($wlcs->{$wlc_id}{ipv4})...");
 
                 my ($session, $error) = Net::SNMP->session(
