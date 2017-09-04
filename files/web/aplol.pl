@@ -93,12 +93,21 @@ unless($page){
 $aplol->connect();
 
 if($page =~ m/^unassigned$/){
-	## Unassigned AP's
-	my $aps = $aplol->get_unassigned_aps();
+	## Unassigned APs
+	my $aps = $aplol->get_active_aps();
 	
 	my @json_array;
 	
 	foreach my $ethmac (keys %$aps){
+		
+		# Skip unwanted APs
+		unless (
+			# We only want unassigned APs
+			( $aps->{$ethmac}{location_name} =~ m/^Root Area$/ )
+		){
+			next;
+		}
+		
 		my $neighbor_addr = $aps->{$ethmac}{neighbor_addr};
 		$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
 		
@@ -124,12 +133,27 @@ if($page =~ m/^unassigned$/){
 	print $json;
 	
 } elsif($page =~ m/^unassociated$/){
-	## Unassociated AP's
-	my $aps = $aplol->get_unassociated_aps();
+	## Unassociated APs
+	my $aps = $aplol->get_active_aps();
 	
 	my @json_array;
 	
 	foreach my $ethmac (keys %$aps){
+		
+		# Skip unwanted APs
+		unless (
+			# We only want unassociated APs
+			( $aps->{$ethmac}{associated} == 0 ) &&
+			
+			# We don't want OEAPs
+			( $aps->{$ethmac}{model} !~ m/OEAP/ ) &&
+						
+			# We don't want 'HBE Utlån'
+			( $aps->{$ethmac}{location_name} !~ m/HBE > Utlan/ )			
+		){
+			next;
+		}
+		
 		my $neighbor_addr = $aps->{$ethmac}{neighbor_addr};
 		$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
 
@@ -173,7 +197,7 @@ if($page =~ m/^unassigned$/){
 	print $json;
 
 } elsif($page =~ m/^rootdomain$/){
-	## AP's member of only ROOT-DOMAIN
+	## APs member of only ROOT-DOMAIN
 	my $aps = $aplol->get_rootdomain_aps();
 	
 	my @json_array;
@@ -204,7 +228,7 @@ if($page =~ m/^unassigned$/){
 	print $json;
 
 } elsif($page =~ m/^all$/){
-	## All active AP's regardless of status
+	## All active APs regardless of status
 	my $aps = $aplol->get_active_aps();
 	
 	my @json_array;
@@ -243,7 +267,7 @@ if($page =~ m/^unassigned$/){
 	my @json_array;
 	
 	foreach my $ethmac (keys %$aps){
-		next if($aps->{$ethmac}{model} =~ m/OEAP/); # don't want OEAP's
+		next if($aps->{$ethmac}{model} =~ m/OEAP/); # don't want OEAPs
 		
 		# show only default-group and deactivated, and not in Root Area
 		if($default_only){
@@ -293,7 +317,7 @@ if($page =~ m/^unassigned$/){
 	my @json_array;
 	
 	foreach my $ethmac (keys %$aps){
-		next if($aps->{$ethmac}{model} =~ m/OEAP/); # don't want OEAP's
+		next if($aps->{$ethmac}{model} =~ m/OEAP/); # don't want OEAPs
 
 		my $neighbor_addr = $aps->{$ethmac}{neighbor_addr};
 		$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
@@ -337,7 +361,7 @@ if($page =~ m/^unassigned$/){
 	my @json_array;
 	
 	foreach my $ethmac (keys %$aps){
-		next if($aps->{$ethmac}{model} =~ m/OEAP/); # don't want OEAP's
+		next if($aps->{$ethmac}{model} =~ m/OEAP/); # don't want OEAPs
 		next if($aps->{$ethmac}{model} =~ m/1810W/); # don't want 1810Ws
 		next if($aps->{$ethmac}{model} =~ m/AP801/); # don't want AP801s
 		next unless($aps->{$ethmac}{associated}); # only want associated APs
@@ -386,7 +410,7 @@ if($page =~ m/^unassigned$/){
 	print $json;
 
 } elsif($page =~ m/^model$/){
-	## All AP's of a specific model
+	## All APs of a specific model
 	my $model = $cgi->param('m');
 
 	if($model){
@@ -438,7 +462,7 @@ if($page =~ m/^unassigned$/){
 	}
 	
 } elsif($page =~ m/^ip$/){
-	## All AP's from a specific subnet
+	## All APs from a specific subnet
 	my $subnet = $cgi->param('subnet');
 
 	if($subnet){
@@ -481,7 +505,7 @@ if($page =~ m/^unassigned$/){
 	}
 	
 } elsif($page =~ m/^apdiff$/){
-	## AP's that are not present in PI, or have mismatching information
+	## APs that are not present in PI, or have mismatching information
 	my $aps = $aplol->get_aps_diff();
 	
 	my @json_array;
@@ -509,11 +533,26 @@ if($page =~ m/^unassigned$/){
 	
 } elsif($page =~ m/^missingcdp$/){
 	## APs with missing CDP-info
-	my $aps = $aplol->get_missing_cdp_aps();
+	my $aps = $aplol->get_active_aps();
 
 	my @json_array;
 
 	foreach my $ethmac (keys %$aps){
+		
+		# Skip unwanted APs
+		unless (
+			# We only want associated APs
+			( $aps->{$ethmac}{associated} == 1 ) &&
+			
+			# We don't want OEAPs
+			( $aps->{$ethmac}{model} !~ m/OEAP/ ) &&
+						
+			# We only want those without CDP-neighbor
+			( $aps->{$ethmac}{neighbor_name} =~ m/^$/ )			
+		){
+			next;
+		}
+		
 		my @ap = (
 			$aps->{$ethmac}{name},
 			$aps->{$ethmac}{ip},
@@ -530,10 +569,53 @@ if($page =~ m/^unassigned$/){
 
 	print header();
 	print $json;
+
+} elsif($page =~ m/^apswithperiod$/){
+	## APs containing periods
+	my $aps = $aplol->get_active_aps();
 	
+	my @json_array;
 	
+	foreach my $ethmac (keys %$aps){
+		
+		# Skip unwanted APs
+		unless (
+			# We only want APs with period in the name
+			( $aps->{$ethmac}{name} =~ m/\./ ) &&
+			
+			# We don't want OEAPs
+			( $aps->{$ethmac}{model} !~ m/OEAP/ )						
+		){
+			next;
+		}
+		
+		my $neighbor_addr = $aps->{$ethmac}{neighbor_addr};
+		$neighbor_addr = "" if $neighbor_addr =~ m/^0\.0\.0\.0$/;
+		
+		my @ap = (
+			$aps->{$ethmac}{name},
+			$aps->{$ethmac}{ip},
+			$aps->{$ethmac}{model},
+			$aps->{$ethmac}{wlc_name},
+			nice_uptime($aps->{$ethmac}{uptime}),
+			$aps->{$ethmac}{neighbor_name},
+			$neighbor_addr,
+			$aps->{$ethmac}{neighbor_port},
+			port_number($aps->{$ethmac}{neighbor_port})
+		);
+		push(@json_array, \@ap);
+	}
+	
+	my %json_data;
+	$json_data{data} = \@json_array;
+	my $json = encode_json \%json_data;
+	
+	print header();
+	print $json;
+	
+
 } elsif($page =~ m/^graph-total$/){
-	## Total number of AP's
+	## Total number of APs
 	my $callback = $cgi->param('callback');
 	my $start = $cgi->param('start');
 	my $end = $cgi->param('end');
@@ -573,7 +655,7 @@ if($page =~ m/^unassigned$/){
 	print $json;
 
 } elsif($page =~ m/^graph-vd$/){
-	## Number of AP's per Virtual Domain
+	## Number of APs per Virtual Domain
 	my $callback = $cgi->param('callback');
 	my $start = $cgi->param('start');
 	my $end = $cgi->param('end');
@@ -615,7 +697,7 @@ if($page =~ m/^unassigned$/){
 	print $json;
 
 } elsif($page =~ m/^graph-wlc$/){
-	## Number of AP's per WLC
+	## Number of APs per WLC
 	my $callback = $cgi->param('callback');
 	my $start = $cgi->param('start');
 	my $end = $cgi->param('end');

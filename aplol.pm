@@ -193,27 +193,6 @@ my $sql_statements = {
 					
 					WHERE	(active = 'true')
 				",
-	get_unassigned_aps =>	"	SELECT	aps.*,
-						wlc.name AS wlc_name
-						
-					FROM	aps
-						INNER JOIN locations AS l ON aps.location_id = l.id
-						INNER JOIN wlc AS wlc ON aps.wlc_id = wlc.id
-						
-					WHERE	(l.location = 'Root Area')
-						AND (aps.active = true)
-				",
-	get_unassociated_aps =>	"	SELECT	aps.*,
-						l.location AS location_name
-						
-					FROM	aps
-						INNER JOIN locations AS l ON aps.location_id = l.id
-						
-					WHERE	(aps.associated = false)
-						AND (aps.active = true)
-						AND (aps.model NOT LIKE '%OEAP%')
-						AND (l.location NOT LIKE '%HBE > Utlan%')
-	",
 	get_rootdomain_aps =>	"	SELECT	aps.ethmac,
 						aps.name,
 						aps.ip,
@@ -452,18 +431,6 @@ my $sql_statements = {
 						(ap_id, username, caseid, message)
 						
 					VALUES	(?, ?, ?, ?)
-				",
-	get_missing_cdp_aps =>	"	SELECT	aps.*,
-						wlc.name AS wlc_name
-			
-					FROM	aps
-						INNER JOIN locations AS l ON aps.location_id = l.id
-						INNER JOIN wlc AS wlc ON aps.wlc_id = wlc.id
-			
-					WHERE	(aps.active = true)
-						AND (aps.associated = true)
-						AND (aps.neighbor_name = '')
-						AND aps.model not like '%OEAP%'
 				",
 };
 
@@ -1083,32 +1050,6 @@ WHERE	NOT EXISTS (
 	$self->{_sth}->finish();
 }
 
-# Get all unassigned AP's
-sub get_unassigned_aps{
-	my $self = shift;
-	
-	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_unassigned_aps});
-	$self->{_sth}->execute();
-	
-	my $aps = $self->{_sth}->fetchall_hashref("ethmac");
-	$self->{_sth}->finish();
-	
-	return $aps;
-}
-
-# Get all unassociated AP's
-sub get_unassociated_aps{
-	my $self = shift;
-	
-	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_unassociated_aps});
-	$self->{_sth}->execute();
-	
-	my $aps = $self->{_sth}->fetchall_hashref("ethmac");
-	$self->{_sth}->finish();
-	
-	return $aps;
-}
-
 # Get all AP's only member of ROOT-DOMAIN
 # and not yet placed on a map
 sub get_rootdomain_aps{
@@ -1364,19 +1305,6 @@ sub add_log{
 	$self->{_sth}->finish();
 }
 
-# Get AP's with missing CDP-info
-sub get_missing_cdp_aps{
-	my $self = shift;
-	
-	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_missing_cdp_aps});
-	$self->{_sth}->execute();
-	
-	my $aps = $self->{_sth}->fetchall_hashref("ethmac");
-	$self->{_sth}->finish();
-	
-	return $aps;
-}
-
 # Sets a new AP group for the specified AP
 sub set_apgroup{
 	my ($self, $apinfo, $apgroup) = @_;
@@ -1515,6 +1443,8 @@ sub set_ap_wlc{
 #   - Not in "Root Location"
 #   - Not in VD ROOT-DOMAIN, HVI or PRIV
 #       - These would cause duplicate rows
+# TODO: Do this dynamically; currently this query WILL break
+#       if we add more hiarchy to VDs in Prime
 sub get_aps_vd{
 	my $self = shift;
 	
