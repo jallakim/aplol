@@ -15,7 +15,7 @@ use lib $aplol_dir;
 use aplol;
 my $aplol = aplol->new();
 my %config = $aplol->get_config();
-my ($wlc_aps, $db_aps);
+my ($wlc_aps, $db_aps, $diff_aps);
 
 # Log
 sub log_it{
@@ -175,23 +175,38 @@ sub compare_wlc_prime{
 			unless($db_aps->{$ethmac}{wlc_name} =~ m/^$wlc_aps->{$ethmac}{wlc_name}$/){
 				# not a match
 				$match = 0;
-				$wlc_aps->{$ethmac}{db_wlc_name} = $db_aps->{$ethmac}{wlc_name};
 			}
 			
 			unless($db_aps->{$ethmac}{apgroup_name} =~ m/^$wlc_aps->{$ethmac}{wlc_apgroup}$/){
 				# not a match
 				$match = 0;
-				$wlc_aps->{$ethmac}{db_apgroup} = $db_aps->{$ethmac}{apgroup_name};
 			}
 			
-			if($match){
-				# identical entry
-				# delete from DB-hash
-				delete($wlc_aps->{$ethmac});
+			unless($match){
+				# non-identical entry, add to hash
+				
+				# set values from WLC
+				$diff_aps->{$ethmac}{name} = $wlc_aps->{$ethmac}{name};
+				$diff_aps->{$ethmac}{wlc_apgroup} = $wlc_aps->{$ethmac}{wlc_apgroup};
+				$diff_aps->{$ethmac}{wlc_name} = $wlc_aps->{$ethmac}{wlc_name};
+				
+				# set values from DB
+				$diff_aps->{$ethmac}{db_wlc_name} = $db_aps->{$ethmac}{wlc_name};
+				$diff_aps->{$ethmac}{db_wlc_name} = "undef" unless($diff_aps->{$ethmac}{db_wlc_name});
+				$diff_aps->{$ethmac}{db_apgroup} = $db_aps->{$ethmac}{apgroup_name};
+				$diff_aps->{$ethmac}{db_apgroup} = "undef" unless($diff_aps->{$ethmac}{db_apgroup});
 			}
 		} else {
-			# shouldn't really happen
-			next;
+			# could happen if AP is disassociated with WLC
+			# entry is not identical, so we can just assume it's offline, and add relevant info
+			
+			$diff_aps->{$ethmac}{name} = $db_aps->{$ethmac}{name};
+			$diff_aps->{$ethmac}{wlc_apgroup} = "undef";
+			$diff_aps->{$ethmac}{wlc_name} = "unassociated";
+			
+			# set values from DB
+			$diff_aps->{$ethmac}{db_wlc_name} = $db_aps->{$ethmac}{wlc_name};
+			$diff_aps->{$ethmac}{db_apgroup} = $db_aps->{$ethmac}{apgroup_name};
 		}
 	}
 	
@@ -202,19 +217,22 @@ sub compare_wlc_prime{
 	# at this point, $wlc_aps should contain all AP's that are
 	# 1) not equal to PI regarding associated WLC and/or wrong AP-group
 	# 2) not present at all on PI
-	foreach my $ethmac (sort keys %$wlc_aps){
-		# make sure we have values
-		my $db_apgroup = $wlc_aps->{$ethmac}{db_apgroup};
-		$db_apgroup = 'undef' unless($db_apgroup);
-		my $db_wlc_name = $wlc_aps->{$ethmac}{db_wlc_name};
-		$db_wlc_name = 'undef' unless($db_wlc_name);
+	# 3) present in PI, but not on WLC (offline, but online in Prime)
+	foreach my $ethmac (sort keys %$diff_aps){
 		
+		if(	($diff_aps->{$ethmac}{wlc_name} =~ m/^unassociated$/) &&
+			($diff_aps->{$ethmac}{db_wlc_name} =~ m/^unassociated$/)){
+			# AP is unassociated on both systems
+			# we don't want to list these, as these are legit
+			next;
+		}
+
 		$aplol->add_aps_diff(	$ethmac,
-					$wlc_aps->{$ethmac}{name},
-					$wlc_aps->{$ethmac}{wlc_apgroup},
-					$db_apgroup,
-					$wlc_aps->{$ethmac}{wlc_name},
-					$db_wlc_name);
+					$diff_aps->{$ethmac}{name},
+					$diff_aps->{$ethmac}{wlc_apgroup},
+					$diff_aps->{$ethmac}{db_apgroup},
+					$diff_aps->{$ethmac}{wlc_name},
+					$diff_aps->{$ethmac}{db_wlc_name});
 	}
 }
 
