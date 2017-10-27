@@ -688,20 +688,20 @@ sub get_json{
 				die(error_log("get-json", "Malformed output from \$url_content; '$newurl'"));
 			};
 
-			# count = total number of entries
-			# last = id for the last entry, but count starts at 0 (last = 23 -> count = 24)
 			# first = id for the first entry
+			# last = id for the last entry, but count starts at 0 (last = 23 -> count = 24)
+			# count = total number of entries
 			my $first = $json_text->{queryResponse}->{'@first'};
 			my $last = $json_text->{queryResponse}->{'@last'};
 			my $count = $json_text->{queryResponse}->{'@count'};
+			$count = 0 unless defined($count);
 			
-			unless(	defined($first) && defined($last) &&
-				defined($count)){
+			unless(defined($first) && defined($last)){
 				# something is wrong with the API
 				error_log("get-json", "Header info: " . $header_info);
-				die(error_log("get-json", "Undefined 'first', 'last' or 'count' in JSON. URL: " . $newurl));
+				error_log("get-json", "Undefined 'first' or 'last' in JSON. URL: " . $newurl);
+				last;
 			}
-			
 			
 			if($count == 0){
 				# no APs found
