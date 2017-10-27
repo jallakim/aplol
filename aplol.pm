@@ -695,18 +695,19 @@ sub get_json{
 			my $last = $json_text->{queryResponse}->{'@last'};
 			my $count = $json_text->{queryResponse}->{'@count'};
 			$count = 0 unless defined($count);
-			
-			unless(defined($first) && defined($last)){
-				# something is wrong with the API
-				error_log("get-json", "Header info: " . $header_info);
-				error_log("get-json", "Undefined 'first' or 'last' in JSON. URL: " . $newurl);
-				last;
+
+			# no APs found
+			if($count == 0){
+				return [];
 			}
 			
-			if($count == 0){
-				# no APs found
-				return [];
-			} elsif(($last + 1) == $count){
+			# undefined first/last, should not happen
+			unless(defined($first) && defined($last)){
+				error_log("get-json", "Header info: " . $header_info);
+				die(error_log("get-json", "Undefined 'first' or 'last' in JSON. URL: " . $newurl));
+			}
+			
+			if(($last + 1) == $count){
 				# this is last page
 				debug_log("get-json", "Last page. URL: " . $newurl);
 				push(@json_content, @{$json_text->{queryResponse}->{'entity'}});
