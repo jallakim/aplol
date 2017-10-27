@@ -684,31 +684,44 @@ sub get_json{
 			} catch {
 				use Data::Dumper;
 				print Dumper($url_content);
-				error_log("get-json", $header_info);
+				error_log("get-json", "Header info: " . $header_info);
 				die(error_log("get-json", "Malformed output from \$url_content; '$newurl'"));
 			};
-			
+
+			# count = total number of entries
+			# last = id for the last entry, but count starts at 0 (last = 23 -> count = 24)
+			# first = id for the first entry
 			my $first = $json_text->{queryResponse}->{'@first'};
 			my $last = $json_text->{queryResponse}->{'@last'};
 			my $count = $json_text->{queryResponse}->{'@count'};
+			
+			unless(	defined($first) && defined($last) &&
+				defined($count)){
+				# something is wrong with the API
+				error_log("get-json", "Header info: " . $header_info);
+				die(error_log("get-json", "Undefined 'first', 'last' or 'count' in JSON. URL: " . $newurl));
+			}
+			
 			
 			if($count == 0){
 				# no APs found
 				return [];
 			} elsif(($last + 1) == $count){
 				# this is last page
+				debug_log("get-json", "Last page. URL: " . $newurl);
 				push(@json_content, @{$json_text->{queryResponse}->{'entity'}});
 				last;
 			} elsif(($last + 1) < $count){
 				# more pages
+				debug_log("get-json", "More pages. URL: " . $newurl);
 				push(@json_content, @{$json_text->{queryResponse}->{'entity'}});
 				$newurl = $url . "&.firstResult=" . ($last + 1);
 				next;
 			} else {
-				die(error_log("get-json", "Wrong 'first' and 'count' in JSON."));
+				die(error_log("get-json", "Wrong 'first' and 'count' in JSON. URL: " . $newurl));
 			}
 		} else {
-			die(error_log("get-json", "No content returned from get_url()."));
+			die(error_log("get-json", "No content returned from get_url(). URL: " . $newurl));
 		}
 	}
 	
