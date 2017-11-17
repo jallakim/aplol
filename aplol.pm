@@ -144,6 +144,7 @@ my $sql_statements = {
 						neighbor_name = (?),
 						neighbor_addr = (?),
 						neighbor_port = (?),
+						no_cdp = (?),
 						updated = 'now()',
 						active = 'true'
 						
@@ -983,6 +984,7 @@ sub update_ap{
 				$apinfo->{neighbor_name},
 				$apinfo->{neighbor_addr},
 				$apinfo->{neighbor_port},
+				$apinfo->{no_cdp},
 				$apinfo->{ethmac}
 				);
 	$self->{_sth}->finish();

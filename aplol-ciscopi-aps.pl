@@ -20,7 +20,7 @@ use lib $aplol_dir;
 use aplol;
 my $aplol = aplol->new();
 my %config = $aplol->get_config();
-my (%locations, $root_aps, $time_start);
+my (%locations, $root_aps, $db_aps, $wlcs, $time_start);
 
 # Log
 sub log_it{
@@ -69,10 +69,12 @@ sub get_aps{
 			# neighbor stuff
 			my $neighbor_count = keys %{$apinfo->{'accessPointDetailsDTO'}->{'cdpNeighbors'}->{'cdpNeighbor'}};
 			my ($neighbor_name, $neighbor_addr, $neighbor_port);
+			my $no_cdp = 0;
 			if($neighbor_count == 0){
 				$neighbor_name = '';
 				$neighbor_addr = "0.0.0.0";
 				$neighbor_port = '';
+				$no_cdp = 1;
 			} else {
 				$neighbor_name = $apinfo->{'accessPointDetailsDTO'}->{'cdpNeighbors'}->{'cdpNeighbor'}->{'neighborName'};
 				$neighbor_addr = $apinfo->{'accessPointDetailsDTO'}->{'cdpNeighbors'}->{'cdpNeighbor'}->{'neighborIpAddress'};
@@ -135,6 +137,7 @@ sub get_aps{
 				neighbor_name => $neighbor_name,
 				neighbor_addr => $neighbor_addr,
 				neighbor_port => $neighbor_port,
+				no_cdp => $no_cdp,
 				client_total => $apinfo->{'accessPointDetailsDTO'}->{'clientCount'},
 				client_24 => $apinfo->{'accessPointDetailsDTO'}->{'clientCount_2_4GHz'},
 				client_5 => $apinfo->{'accessPointDetailsDTO'}->{'clientCount_5GHz'},
@@ -251,13 +254,13 @@ sub update_location{
 
 # update all AP's
 sub update_aps{
-	my $wlcs = $aplol->get_wlcs_name();
-	my $db_aps = $aplol->get_aps();
+	$wlcs = $aplol->get_wlcs_name();
+	$db_aps = $aplol->get_aps();
 	
 	foreach my $ethmac (sort keys %$root_aps){
 		if($db_aps->{$ethmac}){
 			# update AP-info
-			update_ap($wlcs, $ethmac);
+			update_ap($ethmac);
 						
 			# delete from both
 			delete($root_aps->{$ethmac});
@@ -278,7 +281,7 @@ sub update_aps{
 	
 	# add to DB if not present
 	foreach my $ethmac (keys %$root_aps){
-		my $wlc_id = get_wlc_id($wlcs, $ethmac);
+		my $wlc_id = get_wlc_id($ethmac);
 		unless(defined($wlc_id)){
 			error_log("Controller '$root_aps->{$ethmac}{controller}' does not exist in DB. Please fix.");
 			next;
@@ -300,7 +303,7 @@ sub update_aps{
 
 # find WLC ID, if associated
 sub get_wlc_id{
-	my ($wlcs, $ethmac) = @_;
+	my ($ethmac) = @_;
 	
 	my $wlc_id;
 	if ($root_aps->{$ethmac}{controller} =~ m/^unassociated$/){
@@ -339,9 +342,9 @@ sub get_location_id{
 # update AP-info
 # reports are always authorative
 sub update_ap{
-	my ($wlcs, $ethmac) = @_;
+	my ($ethmac) = @_;
 	
-	my $wlc_id = get_wlc_id($wlcs, $ethmac);
+	my $wlc_id = get_wlc_id($ethmac);
 	unless(defined($wlc_id)){
 		error_log("Controller '$root_aps->{$ethmac}{controller}' does not exist in DB. Please fix.");
 		return;
@@ -356,6 +359,15 @@ sub update_ap{
 	# at this point we should have valid $wlc_id and $location_id
 	$root_aps->{$ethmac}{wlc_id} = $wlc_id;
 	$root_aps->{$ethmac}{location_id} = $location_id;
+	
+	# make sure that we keep CDP neighbor information
+	# only do this if new value is blank/null/undef
+	# set new value to the same as we have in the DB
+	if($root_aps->{$ethmac}{no_cdp}){
+		$root_aps->{$ethmac}{neighbor_name} = $db_aps->{$ethmac}{neighbor_name};
+		$root_aps->{$ethmac}{neighbor_addr} = $db_aps->{$ethmac}{neighbor_addr};
+		$root_aps->{$ethmac}{neighbor_port} = $db_aps->{$ethmac}{neighbor_port};
+	}
 	
 	$aplol->update_ap($root_aps->{$ethmac});
 }

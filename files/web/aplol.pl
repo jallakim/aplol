@@ -548,7 +548,7 @@ if($page =~ m/^unassigned$/){
 			( $aps->{$ethmac}{model} !~ m/OEAP/ ) &&
 						
 			# We only want those without CDP-neighbor
-			( $aps->{$ethmac}{neighbor_name} =~ m/^$/ )			
+			( $aps->{$ethmac}{no_cdp} == 1 )			
 		){
 			next;
 		}
