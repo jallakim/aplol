@@ -5,6 +5,8 @@ use Net::SNMP;
 use Net::SNMP::Util;
 use Fcntl qw(:flock);
 
+# Finds "broken" AP-names (wrong MAC address or similar)
+
 # Load aplol
 my $aplol_dir;
 BEGIN {

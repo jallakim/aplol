@@ -10,6 +10,8 @@ use Date::Parse;
 use Scalar::Util qw/reftype/;
 binmode(STDOUT, ":utf8");
 
+# Counts number of APs with/without CDP-information
+
 # Load aplol
 my $aplol_dir;
 BEGIN {

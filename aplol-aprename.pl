@@ -5,6 +5,11 @@ use Net::SNMP;
 use Net::SNMP::Util;
 use Fcntl qw(:flock);
 
+# Renames APs on WLCs, replacing period with hyphen
+# Done to avoid issues with Microsoft DNS, where each subzone
+# needs to be created beforehand, and the periods in the default
+# AP names is treated as zones.
+
 # Load aplol
 my $aplol_dir;
 BEGIN {

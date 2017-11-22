@@ -10,6 +10,8 @@ use Date::Parse;
 use Scalar::Util qw/reftype/;
 binmode(STDOUT, ":utf8");
 
+# Fetch updated AP-information from Cisco Prime
+
 # Load aplol
 my $aplol_dir;
 BEGIN {

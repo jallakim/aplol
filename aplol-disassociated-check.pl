@@ -10,6 +10,9 @@ use Date::Parse;
 use Scalar::Util qw/reftype/;
 binmode(STDOUT, ":utf8");
 
+# Alarm-check for Cisco Prime
+# Checks wether or not alarms are cleared if APs are online
+
 # Load aplol
 my $aplol_dir;
 BEGIN {

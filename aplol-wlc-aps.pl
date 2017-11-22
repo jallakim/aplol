@@ -5,6 +5,10 @@ use Net::SNMP;
 use Net::SNMP::Util;
 use Fcntl qw(:flock);
 
+# Gathers information from the WLCs directly, and correalates this
+# with the information within Cisco Prime
+# Done as a sanity check that the information within Prime is OK
+
 # Load aplol
 my $aplol_dir;
 BEGIN {

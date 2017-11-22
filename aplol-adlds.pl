@@ -7,6 +7,8 @@ use Net::LDAP::Constant qw( LDAP_CONTROL_PAGED );
 use Net::LDAP::Util qw(ldap_error_text);
 use Fcntl qw(:flock);
 
+# Updates LDAP-database with MAC-address from our database
+
 # Load aplol
 my $aplol_dir;
 BEGIN {

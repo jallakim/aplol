@@ -3,6 +3,8 @@ use warnings;
 use strict;
 use Fcntl qw(:flock);
 
+# Count number of APs
+
 # Load aplol
 my $aplol_dir;
 BEGIN {
