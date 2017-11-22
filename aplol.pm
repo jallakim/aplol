@@ -609,11 +609,30 @@ sub get_config{
 	return %config;
 }
 
+# Ping stuff
+sub pong{
+	my $self = shift;
+        my ($ip, $timeout) = @_;
+        my $pong = 0;
+        my $tries = 0;
+	
+	use Net::Ping::External qw(ping);
+	        
+        while(($pong == 0) && ($tries < $timeout)){
+                if(ping(host => $ip, count => 1, timeout => 1)){
+                        $pong = 1;
+                }
+                
+                $tries++;
+        }
+        return $pong;   
+}
+
 # Connect to database
 sub connect{
 	my $self = shift;
 	
-	#if (pingable($config{db}->{hostname})){
+	#if (pong($config{db}->{hostname})){
 	if (1){
 		my $connect_string = "DBI:Pg:";
 		$connect_string .= "dbname=$config{db}->{database};";
@@ -641,7 +660,6 @@ sub disconnect{
 	my $self = shift;
 	$self->{_dbh}->disconnect();
 }
-
 
 # fetch PI API content
 sub get_url{
