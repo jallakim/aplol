@@ -48,14 +48,14 @@ sub show_runtime{
 # fetch AP info
 sub get_apinfo{
 	my $vd = shift;
-	my $url = "data/AccessPointDetails.json?.full=true&type=\"UnifiedAp\"&_ctx.domain=$vd&.maxResults=1000";
+	my $url = "v1/data/AccessPointDetails.json?.full=true&type=\"UnifiedAp\"&_ctx.domain=$vd&.maxResults=1000";
 	return $aplol->get_json($url);
 }
 
 # fetch alarm info
 sub get_alarminfo{
 	my $severity = shift;
-	my $url = "data/Alarms.json?.full=true&severity=$severity&acknowledgementStatus=false&_ctx.domain=ROOT-DOMAIN&.maxResults=1000";
+	my $url = "v1/data/Alarms.json?.full=true&severity=$severity&acknowledgementStatus=false&_ctx.domain=ROOT-DOMAIN&.maxResults=1000";
 	return $aplol->get_json($url);
 }
 
@@ -386,13 +386,34 @@ sub update_alarms{
         	foreach my $alarm (@$alarms){
                         if($alarm->{'alarmsDTO'}->{'category'}->{'value'} =~ m/^AP$/){
                                 # Alarm-type is AP
+				
+				# Next if radio-interface-down alarms
+				next if($alarm->{'alarmsDTO'}->{'deviceName'} =~ m/Interface 802.11/);
 
                                 # get last annotation
                                 my ($alarm_annotation, $annotation_timestamp) = get_last_alarm_annotation($alarm->{'alarmsDTO'}->{'annotations'});
 
-                                # get ap-name
-                                my $wmac = (split(',', $alarm->{'alarmsDTO'}->{'deviceName'}))[1];
-                                next unless($wmac);
+                                # get AP radio mac
+				my $wmac;
+				if($alarm->{'alarmsDTO'}->{'deviceName'} =~ m/,/){
+					# contains comma, old syntax
+					# $apname,$wmac
+					$wmac = (split(',', $alarm->{'alarmsDTO'}->{'deviceName'}))[1];
+				} elsif($alarm->{'alarmsDTO'}->{'deviceName'} =~ m/#/){
+					# contains hash, new syntax
+					# $wmac#$apname
+					$wmac = (split('#', $alarm->{'alarmsDTO'}->{'deviceName'}))[0];
+				} else {
+					# assume temporary syntax
+					# $wmac:$apname
+					$wmac = substr($alarm->{'alarmsDTO'}->{'deviceName'}, 0, 17);
+				}
+				
+				# needs to be valid MAC address
+				unless($wmac =~ m/^$config{regex}->{valid_mac}$/){
+					error_log("Invalid MAC address detected: '$wmac'");
+					next;
+				}
 
 				# timestamps
 				my $alarm_created = $alarm->{'alarmsDTO'}->{'timeStamp'};

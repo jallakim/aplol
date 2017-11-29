@@ -48,7 +48,7 @@ sub show_runtime{
 # fetch AP info
 sub get_apinfo{
 	my $vd = shift;
-	my $url = "data/AccessPointDetails.json?.full=true&type=\"UnifiedAp\"&_ctx.domain=$vd&.maxResults=1000";
+	my $url = "v1/data/AccessPointDetails.json?.full=true&type=\"UnifiedAp\"&_ctx.domain=$vd&.maxResults=1000";
 	return $aplol->get_json($url);
 }
 

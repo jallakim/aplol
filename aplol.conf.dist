@@ -44,7 +44,7 @@
 </adlds>
 
 <ciscopi>
-	baseurl = https://optimus-prime.foobar.com/webacs/api/v1
+	baseurl = https://optimus-prime.foobar.com/webacs/api
 	username = apiuser
 	password = topsecret
 </ciscopi>
