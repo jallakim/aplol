@@ -236,7 +236,7 @@ $select_form
 							$tmp_html .= qq(\t\t\t\t<tr class="danger"><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td><td>$errormsg</td></tr>\n);
 						} else {
 							# update DB
-							$aplol->add_log($apinfo->{id}, $username, $caseid, "WLC changed from '$old_wlc' to '$new_wlc'.");
+							$aplol->add_log($apinfo->{id}, $username, $caseid, "WLC changed from '$old_wlc' to '$new_wlc' (reboot=$reboot).");
 
 							# print success
 							$tmp_html .= qq(\t\t\t\t<tr class="success"><td>$apinfo->{name}</td><td>$apinfo->{location_name}</td><td>-</td></tr>\n);
