@@ -36,7 +36,7 @@ sub update_vd_count{
 	my $vd_count = $aplol->get_vd_count();
 	
 	foreach my $vd_id (keys %$vd_count){
-		$aplol->add_count($vd_id, $vd_count->{$vd_id}{count}, 'vd');
+		$aplol->add_ap_count($vd_id, $vd_count->{$vd_id}{count}, 'vd');
 	}
 }
 
@@ -45,15 +45,29 @@ sub update_wlc_count{
 	my $wlc_count = $aplol->get_wlc_count();
 	
 	foreach my $wlc_id (keys %$wlc_count){
-		$aplol->add_count($wlc_id, $wlc_count->{$wlc_id}{count}, 'wlc');
+		$aplol->add_ap_count($wlc_id, $wlc_count->{$wlc_id}{count}, 'wlc');
 	}	
 }
 
-# Update total count
+# Update total AP count
 sub update_total_count{
-	my $total_count = $aplol->get_total_count();
+	my $total_count = $aplol->get_total_ap_count();
 	
-	$aplol->add_total_count($total_count);
+	$aplol->add_total_ap_count($total_count);
+}
+
+# Update client counts
+sub update_client_count{
+	my $client_count = $aplol->get_client_count();
+	
+	# Total
+	$aplol->add_client_count($client_count->{clients_total}, 'total');
+	
+	# 2.4GHz
+	$aplol->add_client_count($client_count->{clients_2ghz}, '2ghz');
+	
+	# 5GHz
+	$aplol->add_client_count($client_count->{clients_5ghz}, '5ghz');
 }
 
 # We only want 1 instance of this script running
@@ -63,15 +77,18 @@ unless (flock(DATA, LOCK_EX|LOCK_NB)) {
 }
 
 $aplol->connect();
-	
+
 # Update VD-count
 update_vd_count();
 
 # Update WLC-count
 update_wlc_count();
 
-# Update total count
+# Update total AP count
 update_total_count();
+
+# Update client count
+update_client_count();
 	
 $aplol->disconnect();
 

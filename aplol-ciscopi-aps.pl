@@ -140,9 +140,9 @@ sub get_aps{
 				neighbor_addr => $neighbor_addr,
 				neighbor_port => $neighbor_port,
 				no_cdp => $no_cdp,
-				client_total => $apinfo->{'accessPointDetailsDTO'}->{'clientCount'},
-				client_24 => $apinfo->{'accessPointDetailsDTO'}->{'clientCount_2_4GHz'},
-				client_5 => $apinfo->{'accessPointDetailsDTO'}->{'clientCount_5GHz'},
+				clients_total => $apinfo->{'accessPointDetailsDTO'}->{'clientCount'},
+				clients_2ghz => $apinfo->{'accessPointDetailsDTO'}->{'clientCount_2_4GHz'},
+				clients_5ghz => $apinfo->{'accessPointDetailsDTO'}->{'clientCount_5GHz'},
 			);
 
 			# add info

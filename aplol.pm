@@ -123,12 +123,26 @@ my $sql_statements = {
 					
 					WHERE 	(ethmac = ?)
 				",	
-	add_ap =>		"	INSERT	INTO aps
-						(name, ethmac, wmac, serial, ip, model, location_id, 
-						wlc_id, associated, uptime, neighbor_name, neighbor_addr,
-						neighbor_port)
+	add_ap =>		"	INSERT	INTO aps (
+						name,
+						ethmac,
+						wmac,
+						serial,
+						ip,
+						model,
+						location_id,
+						wlc_id,
+						associated,
+						uptime,
+						neighbor_name,
+						neighbor_addr,
+						neighbor_port,
+						clients_total,
+						clients_2ghz,
+						clients_5ghz
+						)
 
-					VALUES	(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+					VALUES	(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				",
 	update_ap =>		"	UPDATE	aps
 	
@@ -145,12 +159,15 @@ my $sql_statements = {
 						neighbor_addr = (?),
 						neighbor_port = (?),
 						no_cdp = (?),
+						clients_total = (?),
+						clients_2ghz = (?),
+						clients_5ghz = (?),
 						updated = 'now()',
 						active = 'true'
 						
 					WHERE	(ethmac = ?)
 				",
-	add_count =>		"	INSERT 	INTO aps_count
+	add_ap_count =>		"	INSERT 	INTO aps_count
 						(type_id, count, type)
 			
 					SELECT	?, ?, ?
@@ -162,6 +179,27 @@ my $sql_statements = {
 							AND (type = ?)
 							AND (date = 'now()')
 					);
+				",
+	add_client_count =>	"	INSERT 	INTO aps_clients
+						(date, count, type)
+
+					SELECT	?, ?, ?
+					
+					WHERE	NOT EXISTS (
+						SELECT	id
+						FROM	aps_clients
+						WHERE	(type = ?)
+							AND (date = ?)
+					);
+				",
+	get_client_count =>	"	SELECT	SUM(clients_total) AS clients_total,
+						SUM(clients_2ghz) AS clients_2ghz,
+						SUM(clients_5ghz) AS clients_5ghz
+						
+					FROM	aps
+					
+					WHERE	(active = true)
+						AND (associated = true)
 				",
 	get_vd_count =>		"	SELECT	vd.id,
 						vd.name,
@@ -188,7 +226,7 @@ my $sql_statements = {
 			
 					GROUP BY wlc.id, wlc.name
 				",
-	get_total_count =>	"	SELECT	COUNT(DISTINCT id) AS count
+	get_total_ap_count =>	"	SELECT	COUNT(DISTINCT id) AS count
 
 					FROM	aps
 					
@@ -599,9 +637,9 @@ sub date_string_ymd{
 	return POSIX::strftime("%Y-%m-%d", localtime(time()));
 }
 
-# Returns YYYY-MM-DD HH
+# Returns YYYY-MM-DD HH:00:00
 sub date_string_ymdh{
-	return POSIX::strftime("%Y-%m-%d %H", localtime(time()));
+	return POSIX::strftime("%Y-%m-%d %H:00:00", localtime(time()));
 }
 
 # Fetch config-values
@@ -979,9 +1017,13 @@ sub add_ap{
 				$apinfo->{uptime},
 				$apinfo->{neighbor_name},
 				$apinfo->{neighbor_addr},
-				$apinfo->{neighbor_port}
+				$apinfo->{neighbor_port},
+				$apinfo->{clients_total},
+				$apinfo->{clients_2ghz},
+				$apinfo->{clients_5ghz}
 				);
 	$self->{_sth}->finish();
+	
 }
 
 # Update AP
@@ -1003,17 +1045,21 @@ sub update_ap{
 				$apinfo->{neighbor_addr},
 				$apinfo->{neighbor_port},
 				$apinfo->{no_cdp},
+				$apinfo->{clients_total},
+				$apinfo->{clients_2ghz},
+				$apinfo->{clients_5ghz},
 				$apinfo->{ethmac}
 				);
 	$self->{_sth}->finish();
+	
 }
 
 # Add count
-sub add_count{
+sub add_ap_count{
 	my $self = shift;
 	my ($id, $count, $type) = @_;
 	
-	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{add_count});
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{add_ap_count});
 	$self->{_sth}->execute($id, $count, $type, $id, $type);
 	$self->{_sth}->finish();
 }
@@ -1045,10 +1091,10 @@ sub get_wlc_count{
 }
 
 # Get total count
-sub get_total_count{
+sub get_total_ap_count{
 	my $self = shift;
 	
-	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_total_count});
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_total_ap_count});
 	$self->{_sth}->execute();
 	
 	my $total_count = ($self->{_sth}->fetchrow_array)[0];
@@ -1059,7 +1105,7 @@ sub get_total_count{
 
 # Insert total count (but only if it doesn't exist already)
 # I.e. we only want one entry per day
-sub add_total_count{
+sub add_total_ap_count{
 	my $self = shift;
 	my $total_count = shift;
 	my $date_like = '\'%' . date_string_ym() . '%\'';
@@ -1082,6 +1128,34 @@ WHERE	NOT EXISTS (
 	$self->{_sth} = $self->{_dbh}->prepare($add_total_query);
 	$self->{_sth}->execute();
 	$self->{_sth}->finish();
+}
+
+# Insert client count
+sub add_client_count{
+	my $self = shift;
+	my ($count, $type) = @_;
+	
+	# Use current hour as timestamp
+	# For simplicity we enforce '00' as the minute and seconds
+	my $date = date_string_ymdh();
+	
+	# Add the count
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{add_client_count});
+	$self->{_sth}->execute($date, $count, $type, $type, $date);
+	$self->{_sth}->finish();
+}
+
+# Get client count
+sub get_client_count{
+	my $self = shift;
+
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_client_count});
+	$self->{_sth}->execute();
+	
+	my $client_count = $self->{_sth}->fetchrow_hashref();
+	$self->{_sth}->finish();
+
+	return $client_count;
 }
 
 # Get all AP's only member of ROOT-DOMAIN
