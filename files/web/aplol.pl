@@ -420,6 +420,8 @@ if($page =~ m/^unassigned$/){
 			$model_like = 'AND aps.model NOT LIKE \'%3702%\'';
 			$model_like .= ' AND aps.model NOT LIKE \'%OEAP%\'';
 			$model_like .= ' AND aps.model NOT LIKE \'%AGN%\'';
+			$model_like .= ' AND aps.model NOT LIKE \'%1532%\'';
+			$model_like .= ' AND aps.model NOT LIKE \'%1810%\'';
 		} else {
 			$model_like = 'AND aps.model LIKE \'%' . $model . '%\'';
 		}
