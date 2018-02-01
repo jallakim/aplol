@@ -25,7 +25,7 @@ sub header{
 
 # print the page
 sub print_page{
-	my ($title, $yaxis, $json_url, $range) = @_;
+	my ($title, $yaxis, $json_url, $range, $utc) = @_;
 
 	print header();
 	print <<LOLZ;
@@ -45,7 +45,7 @@ sub print_page{
 				
 				Highcharts.setOptions({
 					global: {
-						useUTC: true
+						useUTC: $utc
 					}
 				});
 				
@@ -154,11 +154,13 @@ my $graph = $cgi->param('g');
 
 if($graph){
 	if($graph =~ m/^total$/){
-		print_page("Total number of APs", "Number of APs", "/aplol.pl?p=graph-total", 5);
+		print_page("Total number of APs", "Number of APs", "/aplol.pl?p=graph-total", 5, 'true');
 	} elsif($graph =~ m/^vd$/){
-		print_page("Total number of APs", "Number of APs", "/aplol.pl?p=graph-vd", 4);
+		print_page("Total number of APs", "Number of APs", "/aplol.pl?p=graph-vd", 4, 'true');
 	} elsif($graph =~ m/^wlc$/){
-		print_page("Total number of APs", "Number of APs", "/aplol.pl?p=graph-wlc", 4);
+		print_page("Total number of APs", "Number of APs", "/aplol.pl?p=graph-wlc", 4, 'true');
+	} elsif($graph =~ m/^clients$/){
+		print_page("Total number of clients", "Number of clients", "/aplol.pl?p=graph-clients", 0, 'false');
 	} else {
 		# not a valid graph
 		print CGI::header(

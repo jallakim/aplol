@@ -382,6 +382,65 @@ my $sql_statements = {
 
 					ORDER  BY vd.description, date DESC)
 				",
+	get_graph_clients_all => "	SELECT 	type, extract(epoch from date) AS date, count
+
+					FROM 	aps_clients
+				
+					WHERE	date >= to_timestamp(?)
+						AND date <= to_timestamp(?)
+				",
+	get_graph_clients_daily => "	(SELECT DISTINCT ON (date_week, count.type_id)
+						wlc.name, extract(epoch from count.date) AS date, count.count,
+						date_trunc('week', count.date) AS date_week
+
+					FROM 	aps_count AS count
+						INNER JOIN wlc ON wlc.id = count.type_id
+
+					WHERE	count.date >= to_timestamp(?)
+						AND count.date <= to_timestamp(?)
+						AND count.type = 'wlc'
+
+					ORDER BY date_week, count.type_id, date)
+
+					UNION ALL
+
+					(SELECT DISTINCT ON (wlc.name)
+				       		wlc.name, extract(epoch from count.date) AS date, count.count,
+						date_trunc('week', count.date) AS date_week
+
+					FROM 	aps_count AS count
+						INNER JOIN wlc ON wlc.id = count.type_id
+
+					WHERE	count.type = 'wlc'
+
+					ORDER  BY wlc.name, date DESC)
+				",
+	get_graph_clients_week => "	(SELECT DISTINCT ON (date_week, count.type_id)
+						wlc.name, extract(epoch from count.date) AS date, count.count,
+						date_trunc('week', count.date) AS date_week
+
+					FROM 	aps_count AS count
+						INNER JOIN wlc ON wlc.id = count.type_id
+
+					WHERE	count.date >= to_timestamp(?)
+						AND count.date <= to_timestamp(?)
+						AND count.type = 'wlc'
+			
+					ORDER BY date_week, count.type_id, date)
+		
+					UNION ALL
+		
+					(SELECT DISTINCT ON (wlc.name)
+				       		wlc.name, extract(epoch from count.date) AS date, count.count,
+						date_trunc('week', count.date) AS date_week
+	
+					FROM 	aps_count AS count
+						INNER JOIN wlc ON wlc.id = count.type_id
+			
+					WHERE	count.type = 'wlc'
+
+					ORDER  BY wlc.name, date DESC)
+				",
 	get_graph_total =>	"	SELECT	id, extract(epoch from date) AS date, count
 
 					FROM 	aps_count
@@ -1271,6 +1330,32 @@ sub get_graph_vd_all{
 	} else {
 		$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_vd_all});
 	}
+	
+	$self->{_sth}->execute($start, $end);
+	
+	my $count = $self->{_sth}->fetchall_arrayref({});
+	$self->{_sth}->finish();
+	
+	return $count;
+}
+
+# Get client counts
+sub get_graph_clients_all{
+	my $self = shift;
+	my ($start, $end) = @_;
+	
+	# if(($end - $start) > (2 * 31 * 24 * 60 * 60)){
+	# 	# if more than 2 months, load daily data
+	# 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_clients_daily});
+	# } elsif(($end - $start) > (12 * 31 * 24 * 60 * 60)) {
+	# 	# if more than 12 months, load weekly data
+	# 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_clients_week});
+	# } else {
+	# 	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_clients_all});
+	# }
+	
+	# TODO: Fix daily/weekly; just need more data
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_graph_clients_all});
 	
 	$self->{_sth}->execute($start, $end);
 	

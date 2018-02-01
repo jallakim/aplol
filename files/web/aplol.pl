@@ -682,10 +682,10 @@ if($page =~ m/^unassigned$/){
 	
 	# put into correct structure
 	foreach my $vd (sort {$a cmp $b} keys %db_hash){
-		my %vd_hash;
-		$vd_hash{name} = "$vd";
-		$vd_hash{data} = \@{$db_hash{$vd}};
-		push(@json_array, \%vd_hash);
+		my %json_hash;
+		$json_hash{name} = "$vd";
+		$json_hash{data} = \@{$db_hash{$vd}};
+		push(@json_array, \%json_hash);
 	}
 	
 	# make json
@@ -724,10 +724,10 @@ if($page =~ m/^unassigned$/){
 	
 	# put into correct structure
 	foreach my $wlc (sort {$a cmp $b} keys %db_hash){
-		my %wlc_hash;
-		$wlc_hash{name} = "$wlc";
-		$wlc_hash{data} = \@{$db_hash{$wlc}};
-		push(@json_array, \%wlc_hash);
+		my %json_hash;
+		$json_hash{name} = "$wlc";
+		$json_hash{data} = \@{$db_hash{$wlc}};
+		push(@json_array, \%json_hash);
 	}
 	
 	# make json
@@ -739,6 +739,55 @@ if($page =~ m/^unassigned$/){
 	
 	print header();
 	print $json;
+	
+} elsif($page =~ m/^graph-clients$/){
+	## Number of APs per WLC
+	my $callback = $cgi->param('callback');
+	my $start = $cgi->param('start');
+	my $end = $cgi->param('end');
+	my (%db_hash, @json_array);
+	
+	if($start && $end){
+		$start = int($start / 1000);
+		$end = int($end / 1000);
+	} else {
+		# all data
+		$end = time();
+		$start = 0; # the beginning
+	}
+	
+	# get all WLCs
+	my $client_count = $aplol->get_graph_clients_all($start, $end);
+
+	# organize data
+	foreach my $entry (@$client_count){
+		push(@{$db_hash{$entry->{type}}}, [int($entry->{date}*1000), int($entry->{count})]);
+	}
+	
+	# put into correct structure
+	foreach my $type (sort {$a cmp $b} keys %db_hash){
+		my %json_hash;
+		$json_hash{data} = \@{$db_hash{$type}};
+		
+		# Fix names
+		$type =~ s/total/Total/;
+		$type =~ s/2ghz/2.4GHz/;
+		$type =~ s/5ghz/5GHz/;
+		
+		$json_hash{name} = "$type";
+		push(@json_array, \%json_hash);
+	}
+	
+	# make json
+	my $json = encode_json \@json_array;
+	
+	if($callback){
+		$json = $callback . "(" . $json  . ");";
+	}
+	
+	print header();
+	print $json;
+
 } else {
 	## Not a valid table
 	print CGI::header(
