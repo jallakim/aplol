@@ -141,7 +141,7 @@ sub rename_ap{
 	if(keys %$write_result){
 		return 1;
 	} else {
-		error_log("Could not set new AP-name for AP '$oldapname'.");
+		log_it("Error: Could not set new AP-name for AP '$oldapname'.");
 		return 0;
 	}
 }
@@ -155,9 +155,7 @@ sub rename_if_period{
 		
 		log_it("Found AP with '.' in the name ($apname). Renaming to '$newapname'.");
 
-		unless(rename_ap($session, $oid, $apname, $newapname)){
-			error_log("Could not set new AP-name for ap '$apname'.");
-		}
+		rename_ap($session, $oid, $apname, $newapname);
 	}
 }
 
@@ -236,7 +234,7 @@ foreach my $wlc_id (sort keys %$wlcs){
 					# Observed on 1131 APs trying to join WLC with new software-version
 					# The APs is trying to connect, but is refused due to not supported
 					
-					error_log("No MAC found for AP '$apname'");
+					log_it("Error: No MAC found for AP '$apname'");
 					
 					if($rename_period){
 						# We'll replace periods with hyphens at least
@@ -260,7 +258,7 @@ foreach my $wlc_id (sort keys %$wlcs){
 					unless(valid_mac($ethmac)){
 						# still not a valid MAC
 						# let's give up
-						error_log("Could not fetch proper MAC for AP '$apname': $ethmac");
+						error_log("Error: Could not fetch proper MAC for AP '$apname': $ethmac");
 						
 						if($rename_period){
 							# We'll replace periods with hyphens at least
@@ -283,16 +281,13 @@ foreach my $wlc_id (sort keys %$wlcs){
 					# AP doesn't have proper name                            
 					if(valid_apname('-', $propername)){
 						# AP had wrong name, but new is OK
-						error_log("AP '$apname' ($ethmac) has invalid name. Should be '$propername'. Location: $aps->{$ethmac}->{location_name}");
+						log_it("Error: AP '$apname' ($ethmac) has invalid name. Should be '$propername'. Location: $aps->{$ethmac}->{location_name}");
 						log_it("Renaming AP '$apname' to '$propername'.");
 					
-						unless(rename_ap($session, $ap, $apname, $propername)){
-							error_log("Could not set new AP-name for ap '$apname'.");
-							next;
-						}
+						next unless(rename_ap($session, $ap, $apname, $propername));
 					} else {
 						# AP had wrong name, and new is not OK either
-						error_log("AP '$apname' has invalid name. New name ($propername) is also invalid. Should not happen. Location: $aps->{$ethmac}->{location_name}");
+						log_it("Error: AP '$apname' has invalid name. New name ($propername) is also invalid. Should not happen. Location: $aps->{$ethmac}->{location_name}");
 						
 						if($rename_period){
 							# We'll replace periods with hyphens at least
