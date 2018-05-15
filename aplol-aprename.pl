@@ -279,15 +279,18 @@ foreach my $wlc_id (sort keys %$wlcs){
                                         next;
 				} else {
 					# AP doesn't have proper name                            
+					my $location = $aps->{$ethmac}->{location_name};
+					$location = 'undef' unless($location);
+					
 					if(valid_apname('-', $propername)){
-						# AP had wrong name, but new is OK
-						log_it("Error: AP '$apname' ($ethmac) has invalid name. Should be '$propername'. Location: $aps->{$ethmac}->{location_name}");
+						# AP had wrong name, but new is OK	
+						log_it("Error: AP '$apname' ($ethmac) has invalid name. Should be '$propername'. Location: $location");
 						log_it("Renaming AP '$apname' to '$propername'.");
 					
 						next unless(rename_ap($session, $ap, $apname, $propername));
 					} else {
 						# AP had wrong name, and new is not OK either
-						log_it("Error: AP '$apname' has invalid name. New name ($propername) is also invalid. Should not happen. Location: $aps->{$ethmac}->{location_name}");
+						log_it("Error: AP '$apname' has invalid name. New name ($propername) is also invalid. Should not happen. Location: $location");
 						
 						if($rename_period){
 							# We'll replace periods with hyphens at least
