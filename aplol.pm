@@ -1244,6 +1244,36 @@ sub get_active_aps{
 	return $aps;
 }
 
+# Get all AP's with specific CDP neighbor
+sub get_cdp_aps{
+	my $self = shift;
+	my $cdp_neighbor = shift;
+	my $cdp_like = '\'%' . $cdp_neighbor . '%\'';
+		
+	my $cdp_aps_query = qq(
+SELECT	aps.*,
+	wlc.id AS wlc_id,
+	wlc.name AS wlc_name,
+	wlc.ipv4 AS wlc_ipv4,
+	l.location AS location_name
+
+FROM	aps
+	INNER JOIN locations AS l ON aps.location_id = l.id
+	INNER JOIN wlc AS wlc ON aps.wlc_id = wlc.id
+
+WHERE	(aps.active = true)
+	AND (aps.neighbor_name LIKE $cdp_like)
+);
+
+	$self->{_sth} = $self->{_dbh}->prepare($cdp_aps_query);
+	$self->{_sth}->execute();
+	
+	my $aps = $self->{_sth}->fetchall_hashref("ethmac");
+	$self->{_sth}->finish();
+	
+	return $aps;
+}
+
 # Get all AP's of specific model
 sub get_specific_model{
 	my $self = shift;
@@ -1498,6 +1528,21 @@ sub add_log{
 	$self->{_sth}->finish();
 }
 
+# Convert MAC address to decimal
+sub decimal_mac{
+	my ($self, $mac) = @_;
+	
+	use Net::MAC;
+	
+	my $dec_mac = Net::MAC->new('mac' => $mac)->convert(
+		'base' => 10,		# convert from base 16 to base 10
+		'bit_group' => 8,	# octet grouping
+		'delimiter' => '.'	# dot-delimited
+	);
+	
+	return $dec_mac;
+}
+
 # Sets a new AP group for the specified AP
 sub set_apgroup{
 	my ($self, $apinfo, $apgroup) = @_;
@@ -1505,7 +1550,6 @@ sub set_apgroup{
 	if($apinfo->{associated} && $apinfo->{active}){
 		# only allow this for associated and active APs
 		
-		use Net::MAC;
 		use Net::SNMP;
 		use Net::SNMP::Util;
 				
@@ -1519,13 +1563,8 @@ sub set_apgroup{
 
 	        if ($session){	
 			# make OID. first we convert the wireless mac to decimal.
-			my $mac = Net::MAC->new('mac' => $apinfo->{wmac});
-			my $dec_mac = $mac->convert(
-				'base' => 10,		# convert from base 16 to base 10
-				'bit_group' => 8,	# octet grouping
-				'delimiter' => '.'	# dot-delimited
-			);
-		
+			my $dec_mac = decimal_mac($self, $apinfo->{wmac});
+			
 	                my $write_result = $session->set_request(
 	                        -varbindlist => [ $oids{apgroup} . $dec_mac, OCTET_STRING, $apgroup ]
 	                );
@@ -1560,7 +1599,6 @@ sub set_ap_wlc{
 	if($apinfo->{associated} && $apinfo->{active}){
 		# only allow this for associated and active APs
 		
-		use Net::MAC;
 		use Net::SNMP;
 		use Net::SNMP::Util;
 			
@@ -1573,13 +1611,8 @@ sub set_ap_wlc{
 	        );
 
 	        if ($session){
-			my $mac = Net::MAC->new('mac' => $apinfo->{wmac});
-			my $dec_mac = $mac->convert(
-				'base' => 10,         # convert from base 16 to base 10
-				'bit_group' => 8,     # octet grouping
-				'delimiter' => '.'    # dot-delimited
-			);	
-			
+			my $dec_mac = decimal_mac($self, $apinfo->{wmac});
+
 			my $write_result = $session->set_request(
 				-varbindlist => [
 					$oids{wlc}{primary}{name} . $dec_mac, OCTET_STRING, $new_wlc->{name},
