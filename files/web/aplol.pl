@@ -364,6 +364,7 @@ if($page =~ m/^unassigned$/){
 		next if($aps->{$ethmac}{model} =~ m/OEAP/); # don't want OEAPs
 		next if($aps->{$ethmac}{model} =~ m/1810W/); # don't want 1810Ws
 		next if($aps->{$ethmac}{model} =~ m/AP801/); # don't want AP801s
+		next if($aps->{$ethmac}{model} =~ m/AP802/); # don't want AP802s
 		next unless($aps->{$ethmac}{associated}); # only want associated APs
 		
 		# Special case where buildings should be on Lab WLC
