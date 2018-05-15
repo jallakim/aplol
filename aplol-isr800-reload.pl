@@ -105,7 +105,7 @@ foreach my $ap_id (sort keys %$aps){
 			next;
 		}
 		
-		log_it("Reloading AP '$aps->{$ap_id}{name}'");
+		log_it("Reloading AP '$aps->{$ap_id}{name}' on switch '$aps->{$ap_id}{neighbor_name}'.");
 		
 		# reload the AP-module
 		$cisco->print("service-module wlan-ap 0 reload");
