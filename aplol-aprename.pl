@@ -89,7 +89,7 @@ sub valid_apname{
                 $valid = 1;
         }
         
-        return $mac;
+        return $valid;
 }
 
 # Find broken MAC
