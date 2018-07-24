@@ -410,7 +410,7 @@ sub update_alarms{
 				}
 				
 				# needs to be valid MAC address
-				unless($wmac =~ m/^$config{regex}->{valid_mac}$/){
+				unless($aplol->valid_mac($wmac)){
 					error_log("Invalid MAC address detected: '$wmac'");
 					next;
 				}

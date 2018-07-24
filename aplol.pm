@@ -1585,7 +1585,35 @@ sub set_apgroup{
 	}
 }
 
-# returns octet string
+# Check if valid MAC
+sub valid_mac{
+	my $self = shift;
+	my $mac = "@_";
+        my $valid = 0;
+        
+        if($mac =~ m/^$config{regex}->{valid_mac}$/){
+                $valid = 1;
+        }
+        
+        return $valid;
+}
+
+# Make proper MAC
+sub proper_mac{
+	my $self = shift;
+	my $mac = "@_";
+	
+        # remove all non-valid characers
+        # make lowercase + insert ':'
+        # pad with zeroes
+        ($mac = lc($mac) ) =~ s/[^0-9a-fA-F]//g;
+        $mac =~ s/..\K(?=.)/:/g;
+        $mac =~ s/(^|:)(?=[0-9a-fA-F](?::|$))/${1}0/g;
+	
+	return $mac;
+}
+
+# Returns octet string
 sub octet_ipv4{
 	my $ipv4 = shift;
 	

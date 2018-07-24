@@ -128,13 +128,13 @@ sub update_apgroups{
                                                 next;
                                         }
 
-                                        unless($apmac =~ m/^$config{regex}->{valid_mac}$/){
+                                        unless($aplol->valid_mac($apmac)){
                                                 # has to be valid, try fetch manually
 
                                                 my $apmacoid_complete = $oids{bsnAPEntry} . "." . $apmacoid;
                                                 my $fixed_mac = find_broken_mac($wlcs->{$wlc_id}{ipv4}, $wlcs->{$wlc_id}{snmp_ro}, $apmacoid_complete);
 
-                                                if($fixed_mac =~ m/^$config{regex}->{valid_mac}$/){
+                                                if($aplol->valid_mac($fixed_mac)){
                                                         # yay, we found valid
                                                         $apmac = $fixed_mac;
                                                 } else {

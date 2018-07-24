@@ -89,19 +89,7 @@ sub valid_apname{
                 $valid = 1;
         }
         
-        return $valid;
-}
-
-# Check if valid MAC
-sub valid_mac{
-        my $mac = "@_";
-        my $valid = 0;
-        
-        if($mac =~ m/^([0-9a-f]{2}[:-]){5}([0-9a-f]{2})$/i){
-                $valid = 1;
-        }
-        
-        return $valid;
+        return $mac;
 }
 
 # Find broken MAC
@@ -118,12 +106,7 @@ sub find_broken_mac{
         
         return "undef" unless($mac); # needs a value
 
-        # remove all non-valid characers
-        # make lowercase + insert ':'
-        # pad with zeroes
-        ($mac = lc($mac) ) =~ s/[^0-9a-fA-F]//g;
-        $mac =~ s/..\K(?=.)/:/g;
-        $mac =~ s/(^|:)(?=[0-9a-fA-F](?::|$))/${1}0/g;
+	$mac = $aplol->proper_mac($mac);
 
         return $mac;
 }
@@ -248,14 +231,14 @@ foreach my $wlc_id (sort keys %$wlcs){
 				my $ethmac = mac_snmp_to_hex($result->{cLApIfMacAddress}{$ap});
 							
 				# check if valid MAC
-				unless(valid_mac($ethmac)){
+				unless($aplol->valid_mac($ethmac)){
 					# try to fetch "manually"
 					debug_log("Invalid MAC for AP '$apname' ($ethmac). Trying to fetch manually.");
                                         
 					my $oid = $oids{cLApIfMacAddress} . "." . $ap;
 					$ethmac = find_broken_mac($wlcs->{$wlc_id}{ipv4}, $wlcs->{$wlc_id}{snmp_ro}, $oid);
                                         
-					unless(valid_mac($ethmac)){
+					unless($aplol->valid_mac($ethmac)){
 						# still not a valid MAC
 						# let's give up
 						error_log("Error: Could not fetch proper MAC for AP '$apname': $ethmac");
