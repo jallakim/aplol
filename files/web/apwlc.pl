@@ -37,7 +37,6 @@ sub html_selectform{
 	foreach my $wlc_id (sort keys %$wlcs){
 		my $wlc_name = $wlcs->{$wlc_id}{name};
 		next unless ($wlcs->{$wlc_id}{active}); # only want active WLCs
-		next if ($wlc_name =~ m/dmz/); # dont want DMZ
 		
 		if($current_wlc =~ m/^$wlc_name$/){
 			# match
