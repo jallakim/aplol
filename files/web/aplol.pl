@@ -543,15 +543,18 @@ if($page =~ m/^unassigned$/){
 	foreach my $ethmac (keys %$aps){
 		
 		# Skip unwanted APs
-		unless (
+		if (
 			# We only want associated APs
-			( $aps->{$ethmac}{associated} == 1 ) &&
+			( $aps->{$ethmac}{associated} == 0 ) ||
 			
 			# We don't want OEAPs
-			( $aps->{$ethmac}{model} !~ m/OEAP/ ) &&
+			( $aps->{$ethmac}{model} =~ m/OEAP/ ) ||
+			
+			# We don't want APs on DMZ WLC
+			( $aps->{$ethmac}{wlc_name} =~ m/dmz/ ) ||
 						
 			# We only want those without CDP-neighbor
-			( $aps->{$ethmac}{no_cdp} == 1 )			
+			( $aps->{$ethmac}{no_cdp} == 0 )		
 		){
 			next;
 		}
