@@ -232,6 +232,23 @@ my $sql_statements = {
 					
 					WHERE	(active = 'true')
 				",
+	get_location_apcount =>	"	SELECT	ROW_NUMBER() OVER(ORDER BY l.id) AS row,
+						l.id AS id,
+						l.location AS location,
+						vd.name AS vd_name,
+						vd.description AS vd_desc,
+						vd.description_long AS vd_desc_long,
+						COUNT(ap.id) AS ap_count
+						
+					FROM	locations AS l
+						INNER JOIN vd_mapping AS vd_map ON vd_map.location_id = l.id
+						INNER JOIN virtual_domains AS vd ON vd_map.vd_id = vd.id
+						LEFT OUTER JOIN aps AS ap ON ap.location_id = l.id
+						
+					WHERE	(ap.active = 'true')
+						
+					GROUP BY l.id, l.location, vd.name, vd.description, vd.description_long
+				",
 	get_rootdomain_aps =>	"	SELECT	aps.ethmac,
 						aps.name,
 						aps.ip,
@@ -1215,6 +1232,19 @@ sub get_client_count{
 	$self->{_sth}->finish();
 
 	return $client_count;
+}
+
+# Get number of APs per location
+sub get_location_apcount{
+	my $self = shift;
+
+	$self->{_sth} = $self->{_dbh}->prepare($sql_statements->{get_location_apcount});
+	$self->{_sth}->execute();
+
+	my $locations = $self->{_sth}->fetchall_hashref("row");
+	$self->{_sth}->finish();
+
+	return $locations;
 }
 
 # Get all AP's only member of ROOT-DOMAIN

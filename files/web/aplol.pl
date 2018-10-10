@@ -618,7 +618,107 @@ if($page =~ m/^unassigned$/){
 	
 	print header();
 	print $json;
+
+} elsif($page =~ m/^locationapcount$/){
+	## Count number of APs per location
+	my $location_count = $aplol->get_location_apcount();
+	my ($total_count, %loc_count, %loc_vd, @json_array);
+
+	foreach my $loc_id (keys %$location_count){
+		my $loc = $location_count->{$loc_id}->{location};
+		my $vd = $location_count->{$loc_id}->{vd_name};
 	
+		# Skip Root Area
+		if($loc =~ m/^Root Area$/){
+			next;
+		}
+	
+		# Skip all but ROOT-DOMAIN
+		unless($vd =~ m/^ROOT-DOMAIN$/){
+			# add VD unless PRIV & HVI
+			unless(	($vd =~ m/^PRIV$/) ||
+				($vd =~ m/^HVI$/)){
+				$loc_vd{$loc}{vd} = $vd;
+			}
+		
+			# skip counting (we only count ROOT-DOMAIN)
+			next;
+		}
+
+		my ($site, $build, $floor) = split(' > ', $loc);
+
+		# increment counters
+		$total_count += $location_count->{$loc_id}->{ap_count};
+		$loc_count{$site}{count} += $location_count->{$loc_id}->{ap_count};
+		$loc_count{$site}{$build}{count} += $location_count->{$loc_id}->{ap_count};
+		$loc_count{$site}{$build}{$floor}{count} += $location_count->{$loc_id}->{ap_count};
+	}
+
+	foreach my $site (sort keys %loc_count){
+		# Site
+		
+		my @count = (
+			"", # VD
+			$site, # Site
+			"", # Building
+			"", # Floor
+			$loc_count{$site}{count} # Count
+		);
+		push(@json_array, \@count);
+		
+		foreach my $build (sort keys %{$loc_count{$site}}){
+			# Building
+	
+			# Skip 'count'
+			next if($build =~ m/count/);
+			
+			my @count = (
+				"", # VD
+				$site, # Site
+				$build, # Building
+				"", # Floor
+				$loc_count{$site}{$build}{count} # Count
+			);
+			push(@json_array, \@count);
+	
+			foreach my $floor (sort keys %{$loc_count{$site}{$build}}){
+				# Floor
+		
+				# Skip 'count'
+				next if($floor =~ m/count/);
+				
+				my $loc = "$site > $build > $floor";
+				my $vd = $loc_vd{$loc}{vd};
+				
+				my @count = (
+					$vd, # VD
+					$site, # Site
+					$build, # Building
+					$floor, # Floor
+					$loc_count{$site}{$build}{$floor}{count} # Count
+				);
+				push(@json_array, \@count);
+			}
+		}
+	}
+
+	#print "Total count: $total_count\n";
+	
+	# my @count = (
+	# 	"", # VD
+	# 	"", # Site
+	# 	"", # Building
+	# 	"", # Floor
+	# 	"" # Count
+	# );
+	# push(@json_array, \@ap);
+	
+	my %json_data;
+	$json_data{data} = \@json_array;
+	my $json = encode_json \%json_data;
+	
+	print header();
+	print $json;
 
 } elsif($page =~ m/^graph-total$/){
 	## Total number of APs
